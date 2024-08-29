@@ -90,5 +90,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   falling: 0
-  speed: 1
-  gravity: 50
+  speed: 16
+  gravity: 100

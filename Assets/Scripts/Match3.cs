@@ -129,7 +129,7 @@ public class Match3 : MonoBehaviour
                         piece.Initialize(newVal, p, pieces[newVal - 1]);
                         piece.rect.anchoredPosition = getPositionFromPoint(fallPoint); //put new piece on top so it looks like falling down
 
-                        Node hole = getNodeAtPoint(p);                        
+                        Node hole = getNodeAtPoint(p);
                         hole.SetPiece(piece);
                         ResetPiece(piece);
                         fills[x]++;
@@ -309,26 +309,7 @@ public class Match3 : MonoBehaviour
             if (same > 1)
                 AddPoints(ref connected, line);
         }
-        /*
-        for(int i = 0; i < 4; i++){
-            List<Point> square = new List<Point>();
-            int same = 0;
-            int next = i + 1;
-            if (next >= 4)
-                next -= 4;
 
-            Point[] check = {Point.add(p, directions[i]), Point.add(p, directions[next]), Point.add(p, Point.add(directions[i], directions[next]))};
-            foreach(Point pnt in check){ //check both sides of the piece, if they are same, add them to list;
-                if(getValueAtPoint(pnt) == val){
-                    square.Add(pnt);
-                    same++;
-                }
-            }
-
-            if(same > 2)
-                AddPoints(ref connected, square);
-        }
-        */
         if(main){ //checks for other matches along the current match
             for(int i = 0; i<connected.Count; i++){
                 List<Point> more = isConnected(connected[i], false);
