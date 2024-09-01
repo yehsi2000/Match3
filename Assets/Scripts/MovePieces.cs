@@ -43,7 +43,7 @@ public class MovePieces : MonoBehaviour
 
             Vector2 pos = game.getPositionFromPoint(moving.index);
             if (!newIndex.Equals(moving.index))
-                pos += Point.mult(new Point(add.x, -add.y), 16).ToVector();
+                pos += Point.mult(new Point(add.x, -add.y), 20).ToVector();
             moving.MovePositionTo(pos);
         }
     }

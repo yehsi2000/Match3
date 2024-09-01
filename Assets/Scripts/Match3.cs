@@ -214,7 +214,7 @@ public class Match3 : MonoBehaviour
                 GameObject p = Instantiate(nodePiece, gameBoard);
                 NodePiece piece =p.GetComponent<NodePiece>();
                 RectTransform rect = p.GetComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2(32 + (64 * x), -32 - (64*y));
+                rect.anchoredPosition = new Vector2(40 + (80 * x), -40 - (80*y));
                 piece.Initialize(val, new Point(x,y), pieces[val-1]);
                 node.SetPiece(piece);
             }
@@ -388,7 +388,7 @@ public class Match3 : MonoBehaviour
     }
 
     public Vector2 getPositionFromPoint(Point p){
-        return new Vector2(32 + (64 * p.x), -32 - (64*p.y));
+        return new Vector2(40 + (80 * p.x), -40 - (80*p.y));
     }
 }
 
