@@ -5,10 +5,14 @@ using TMPro;
 
 public class ScoreBoard : MonoBehaviour
 {
-    public TMP_Text textMeshPro;
+    TMP_Text scoreText;
+
+    private void Start() {
+        scoreText = GetComponent<TMP_Text>();
+    }
 
     public void UpdateScore(int score)
     {
-        textMeshPro.text = "Score : " + score;
+        scoreText.text = "Score : " + score;
     }
 }

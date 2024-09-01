@@ -11,7 +11,10 @@ public class Match3 : MonoBehaviour
     public Sprite[] pieces;
     public RectTransform gameBoard;
     public RectTransform killedBoard;
+    public GameObject gameEndScreen;
     public ScoreBoard scoreBoard;
+    public TMP_Text finalScore;
+    public Timer timer;
 
     [Header("Prefabs")]
     public GameObject nodePiece;
@@ -37,9 +40,15 @@ public class Match3 : MonoBehaviour
     void Start()
     {
         StartGame();
+        gameEndScreen.SetActive(false);
     }
 
     void Update(){
+        if (!timer.UpdateTimer()) {
+            gameEndScreen.SetActive(true);
+            finalScore.text = "Final Score : " + score;
+            this.enabled = false;
+        }
         List<NodePiece> finishedUpdating = new List<NodePiece>();
         for(int i = 0; i < update.Count; i++){
             NodePiece piece = update[i];
@@ -153,7 +162,7 @@ public class Match3 : MonoBehaviour
         return flip;
     }
 
-    void StartGame(){
+    public void StartGame(){
         string seed = getRandomSeed();
         random = new System.Random(seed.GetHashCode());
         update = new List<NodePiece>();
@@ -165,6 +174,7 @@ public class Match3 : MonoBehaviour
         VerifyBoard();
         InstantiateBoard();
         score = 0;
+        timer.StartTimer();
     }
 
     void InitializeBoard(){
@@ -281,6 +291,7 @@ public class Match3 : MonoBehaviour
 
         foreach(Point dir in directions) {
             List<Point> line = new List<Point>();
+            line.Add(p);
 
             int same = 0;
             for(int i = 1; i < 3; i++) {
@@ -296,6 +307,7 @@ public class Match3 : MonoBehaviour
         }
         for(int i = 0; i < 2; i++) {
             List<Point> line = new List<Point>();
+            line.Add(p);
 
             int same = 0;
             Point[] check = { Point.add(p, directions[i]), Point.add(p, directions[i + 2]) };
@@ -313,7 +325,10 @@ public class Match3 : MonoBehaviour
         if(main){ //checks for other matches along the current match
             for(int i = 0; i<connected.Count; i++){
                 List<Point> more = isConnected(connected[i], false);
-                AddPoints(ref connected, more);
+                int additional_match = AddPoints(ref connected, more);
+                if (additional_match != 0) {
+                    Debug.LogFormat("add : %d more : %d",additional_match,more.Count);
+                }
             }
         }
 
@@ -321,7 +336,8 @@ public class Match3 : MonoBehaviour
 
     }
 
-    void AddPoints(ref List<Point>points, List<Point> add){
+    int AddPoints(ref List<Point>points, List<Point> add){
+        int added = 0;
         foreach(Point p in add){
             bool doAdd = true;
             for(int i=0; i < points.Count; i++){
@@ -330,8 +346,12 @@ public class Match3 : MonoBehaviour
                     break;
                 }
             }
-            if(doAdd) points.Add(p);
+            if (doAdd) {
+                points.Add(p);
+                added++;
+            }
         }
+        return added;
     }
 
     int getValueAtPoint(Point p){
