@@ -12,13 +12,17 @@ public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public Vector2 pos;
     [HideInInspector]
     public RectTransform rect;
+    [SerializeField]
+    public float moveSpeed = 16f;
 
     bool updating;
     Image img;
+    int nodeSize;
 
-    public void Initialize(int v, Point p, Sprite piece){
+    public void Initialize(int v, Point p, Sprite piece, int size){
         img = GetComponent<Image>();
         rect = GetComponent<RectTransform>();
+        nodeSize = size;
 
         value = v;
         SetIndex(p);
@@ -32,7 +36,7 @@ public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }
 
     public void ResetPosition(){
-        pos = new Vector2(40 + (80 * index.x), -40 - (80 * index.y));
+        pos = new Vector2(nodeSize/2 + (nodeSize * index.x), -nodeSize/2 - (nodeSize * index.y));
     }
 
     void UpdateName(){
@@ -40,11 +44,11 @@ public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }
 
     public void MovePosition(Vector2 move){
-        rect.anchoredPosition += move * Time.deltaTime * 16f;
+        rect.anchoredPosition += move * Time.deltaTime * moveSpeed;
     }
 
     public void MovePositionTo(Vector2 move){
-        rect.anchoredPosition = Vector2.Lerp(rect.anchoredPosition, move, Time.deltaTime * 16f);
+        rect.anchoredPosition = Vector2.Lerp(rect.anchoredPosition, move, Time.deltaTime * moveSpeed);
     }
 
     public bool UpdatePiece(){

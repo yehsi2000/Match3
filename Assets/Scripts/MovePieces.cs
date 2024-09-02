@@ -25,25 +25,25 @@ public class MovePieces : MonoBehaviour
     {
         if(moving != null)
         {
-            Vector2 dir = ((Vector2)Input.mousePosition - mouseStart);
+            Vector2 dir = ((Vector2)Input.mousePosition - mouseStart); //mouse moved vector
             Vector2 nDir = dir.normalized;
-            Vector2 aDir = new Vector2(Mathf.Abs(dir.x), Mathf.Abs(dir.y));
+            Vector2 aDir = new Vector2(Mathf.Abs(dir.x), Mathf.Abs(dir.y)); //for checking which direction to flip
 
             newIndex = Point.clone(moving.index);
             Point add = Point.zero;
-            if (dir.magnitude > 32) //If our mouse is 32 pixels away from the starting point of the mouse
-            {
-                //make add either (1, 0) | (-1, 0) | (0, 1) | (0, -1) depending on the direction of the mouse point
+            if (dir.magnitude > game.nodeSize/2) {
+                // If our mouse is away from the starting point for certain amount,
+                // select move position based on most moved direction (by checking abs x,y val)
                 if (aDir.x > aDir.y)
                     add = (new Point((nDir.x > 0) ? 1 : -1, 0));
                 else if(aDir.y > aDir.x)
                     add = (new Point(0, (nDir.y > 0) ? -1 : 1));
             }
-            newIndex.add(add);
+            newIndex.add(add); //new index for flicked piece
 
-            Vector2 pos = game.getPositionFromPoint(moving.index);
+            Vector2 pos = game.GetPositionFromPoint(moving.index);
             if (!newIndex.Equals(moving.index))
-                pos += Point.mult(new Point(add.x, -add.y), 20).ToVector();
+                pos += Point.mult(new Point(add.x, -add.y), game.nodeSize/4).ToVector();
             moving.MovePositionTo(pos);
         }
     }

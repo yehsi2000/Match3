@@ -1,7 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 public class Match3 : MonoBehaviour
 {
@@ -24,6 +23,9 @@ public class Match3 : MonoBehaviour
     public int score;
     public int perPieceScore = 100;
 
+    [SerializeField]
+    public int nodeSize = 80;
+
     int width = 14;
     int height = 9;
     int[] fills;
@@ -44,37 +46,44 @@ public class Match3 : MonoBehaviour
     }
 
     void Update(){
+        //update timer
         if (!timer.UpdateTimer()) {
             gameEndScreen.SetActive(true);
             finalScore.text = "Final Score : " + score;
             this.enabled = false;
         }
+
+        //update moving pieces and store it for flip check
         List<NodePiece> finishedUpdating = new List<NodePiece>();
         for(int i = 0; i < update.Count; i++){
             NodePiece piece = update[i];
             if (!piece.UpdatePiece()) finishedUpdating.Add(piece);
         }
+
+        //check if flipped pieces could make a match, else revert flip
         for (int i = 0; i < finishedUpdating.Count; i++){
-            NodePiece piece = finishedUpdating[i];
-            FlippedPieces flip = getFlipped(piece);
+            NodePiece piece = finishedUpdating[i]; //updated piece
+            FlippedPieces flip = GetFlipped(piece); //flipped by updated piece
             NodePiece flippedPiece = null;
             
-            int x = (int)piece.index.x;
+            int x = piece.index.x; //"x"th column
             fills[x] = Mathf.Clamp(fills[x]-1, 0, width);
 
-            List<Point> connected = isConnected(piece.index, true);
+            List<Point> connected = isConnected(piece.index, true); //check if user controlled piece made a match
             bool wasFlipped = (flip != null);
 
             if (wasFlipped) {
-                flippedPiece = flip.getOtherPiece(piece);
+                flippedPiece = flip.GetOtherPiece(piece);
                 AddPoints(ref connected, isConnected(flippedPiece.index, true));
             }
 
-            if (connected.Count == 0){ //if we didn't make a match
+            if (connected.Count == 0){
+                //if we didn't make a match
                 if (wasFlipped)
-                    FlipPieces(piece.index, flippedPiece.index, false);
+                    FlipPieces(piece.index, flippedPiece.index, false); //revert flip
             }
             else {
+                //made a match
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
@@ -135,8 +144,8 @@ public class Match3 : MonoBehaviour
                             piece = n;
                         }
 
-                        piece.Initialize(newVal, p, pieces[newVal - 1]);
-                        piece.rect.anchoredPosition = getPositionFromPoint(fallPoint); //put new piece on top so it looks like falling down
+                        piece.Initialize(newVal, p, pieces[newVal - 1], nodeSize);
+                        piece.rect.anchoredPosition = GetPositionFromPoint(fallPoint); //put new piece on top so it looks like falling down
 
                         Node hole = getNodeAtPoint(p);
                         hole.SetPiece(piece);
@@ -151,10 +160,13 @@ public class Match3 : MonoBehaviour
 
     }
 
-    FlippedPieces getFlipped(NodePiece p){
+    /*
+     * 
+     */
+    FlippedPieces GetFlipped(NodePiece p){
         FlippedPieces flip = null;
         for(int i=0; i<flipped.Count; i++){
-            if (flipped[i].getOtherPiece(p) !=null){
+            if (flipped[i].GetOtherPiece(p) !=null){
                 flip = flipped[i];
                 break;
             }
@@ -163,7 +175,7 @@ public class Match3 : MonoBehaviour
     }
 
     public void StartGame(){
-        string seed = getRandomSeed();
+        string seed = GetRandomSeed();
         random = new System.Random(seed.GetHashCode());
         update = new List<NodePiece>();
         flipped = new List<FlippedPieces>();
@@ -214,8 +226,8 @@ public class Match3 : MonoBehaviour
                 GameObject p = Instantiate(nodePiece, gameBoard);
                 NodePiece piece =p.GetComponent<NodePiece>();
                 RectTransform rect = p.GetComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2(40 + (80 * x), -40 - (80*y));
-                piece.Initialize(val, new Point(x,y), pieces[val-1]);
+                rect.anchoredPosition = new Vector2(nodeSize/2 + (nodeSize * x), -nodeSize/2 - (nodeSize*y));
+                piece.Initialize(val, new Point(x,y), pieces[val-1], nodeSize);
                 node.SetPiece(piece);
             }
         }
@@ -257,15 +269,16 @@ public class Match3 : MonoBehaviour
         int val = getValueAtPoint(p) - 1;
         if (set != null && val >= 0 && val < pieces.Length)
         {
-            set.Initialize(pieces[val], getPositionFromPoint(p));
+            set.Initialize(pieces[val], GetPositionFromPoint(p));
         }
     }
 
     public void FlipPieces(Point one, Point two, bool main){
-        if(getValueAtPoint(one) < 0) return; //hole
+        if(getValueAtPoint(one) < 0) return; //if first one's hole do nothing
         Node nodeOne = getNodeAtPoint(one);
         NodePiece pieceOne = nodeOne.GetPiece();
-        if(getValueAtPoint(two) >0){
+        if(getValueAtPoint(two) > 0){
+            //second one's also not hole
             Node nodeTwo = getNodeAtPoint(two);
             NodePiece pieceTwo = nodeTwo.GetPiece();
             nodeOne.SetPiece(pieceTwo);
@@ -276,7 +289,7 @@ public class Match3 : MonoBehaviour
             update.Add(pieceOne);
             update.Add(pieceTwo);
         } else 
-            ResetPiece(pieceOne);
+            ResetPiece(pieceOne); //second one's hole, reset first one's position
     }
 
     List<Point> isConnected(Point p, bool main){
@@ -379,7 +392,7 @@ public class Match3 : MonoBehaviour
         
     }
 
-    string getRandomSeed(){
+    string GetRandomSeed(){
         string seed = "";
         string acceptableChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!@#$%^&*()";
         for(int i=0; i<20; i++)
@@ -387,8 +400,8 @@ public class Match3 : MonoBehaviour
         return seed;
     }
 
-    public Vector2 getPositionFromPoint(Point p){
-        return new Vector2(40 + (80 * p.x), -40 - (80*p.y));
+    public Vector2 GetPositionFromPoint(Point p){
+        return new Vector2(nodeSize/2 + (nodeSize * p.x), -nodeSize/2 - (nodeSize*p.y));
     }
 }
 
@@ -424,7 +437,7 @@ public class FlippedPieces{
         two = t;
     }
 
-    public NodePiece getOtherPiece(NodePiece p){
+    public NodePiece GetOtherPiece(NodePiece p){
         if(p==one) return two;
         else if(p==two) return one;
         else return null;
