@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -21,9 +22,11 @@ public class Match3 : MonoBehaviour
 
     [Header("Score")]
     public int score;
-    public int perPieceScore = 100;
-
-    [SerializeField]
+    public int perPieceScore = 5;
+    public int match4ExtraScore = 20;
+    public int match5ExtraScore = 50;
+    public int match6plusExtraScore = 100;
+    [Header("NodeSize")]
     public int nodeSize = 80;
 
     int width = 14;
@@ -84,9 +87,11 @@ public class Match3 : MonoBehaviour
             }
             else {
                 //made a match
+                int[] matchTypeCnt = new int[5];
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
+                    matchTypeCnt[node.value-1]++;
                     score += perPieceScore;
                     NodePiece nodePiece = node.GetPiece();
                     if(nodePiece != null){
@@ -94,6 +99,17 @@ public class Match3 : MonoBehaviour
                         dead.Add(nodePiece);
                     }
                     node.SetPiece(null);
+                }
+                for (int j= 0; j < 5;++j) {
+                    // val = j+1
+                    // 1=cube, 2=sphere, 3=cylinder, 4=pyramid, 5=diamond,
+                    if (matchTypeCnt[j] == 4) {
+                        score += match4ExtraScore;
+                    } else if (matchTypeCnt[j] == 5) {
+                        score += match5ExtraScore;
+                    } else if (matchTypeCnt[j] > 6) {
+                        score += match6plusExtraScore;
+                    }
                 }
 
                 ApplyGravityToBoard();
@@ -160,9 +176,6 @@ public class Match3 : MonoBehaviour
 
     }
 
-    /*
-     * 
-     */
     FlippedPieces GetFlipped(NodePiece p){
         FlippedPieces flip = null;
         for(int i=0; i<flipped.Count; i++){
@@ -335,7 +348,29 @@ public class Match3 : MonoBehaviour
                 AddPoints(ref connected, line);
         }
 
-        if(main){ //checks for other matches along the current match
+        for (int i = 0; i < 4; i++) {
+            //Check for a 2x2
+            List<Point> square = new List<Point>();
+
+            int same = 0;
+            int next = i + 1;
+            if (next >= 4)
+                next -= 4;
+
+            Point[] check = { Point.add(p, directions[i]), Point.add(p, directions[next]), Point.add(p, Point.add(directions[i], directions[next])) };
+            foreach (Point pnt in check) { 
+                //Check all sides of the piece, if they are the same value, add them to the list
+                if (getValueAtPoint(pnt) == val) {
+                    square.Add(pnt);
+                    same++;
+                }
+            }
+
+            if (same > 2)
+                AddPoints(ref connected, square);
+        }
+
+        if (main){ //checks for other matches along the current match
             for(int i = 0; i<connected.Count; i++){
                 List<Point> more = isConnected(connected[i], false);
                 int additional_match = AddPoints(ref connected, more);

@@ -784,6 +784,9 @@ MonoBehaviour:
   killedPiece: {fileID: 3808634555857249372, guid: d71b84b7cf5668f499d7b372a059f046, type: 3}
   score: 0
   perPieceScore: 5
+  match4ExtraScore: 20
+  match5ExtraScore: 45
+  match6plusExtraScore: 100
   nodeSize: 80
 --- !u!4 &951057382
 Transform:
