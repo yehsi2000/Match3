@@ -12,6 +12,7 @@ public class Match3 : MonoBehaviour
     public RectTransform gameBoard;
     public RectTransform killedBoard;
     public GameObject gameEndScreen;
+    public GameObject bgImageObject;
     public ScoreBoard scoreBoard;
     public TMP_Text finalScore;
     public Timer timer;
@@ -91,12 +92,14 @@ public class Match3 : MonoBehaviour
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
-                    matchTypeCnt[node.value-1]++;
+                    if(node.value>0)
+                        matchTypeCnt[node.value-1]++;
                     score += perPieceScore;
                     NodePiece nodePiece = node.GetPiece();
                     if(nodePiece != null){
-                        nodePiece.gameObject.SetActive(false);
-                        dead.Add(nodePiece);
+                        //nodePiece.gameObject.SetActive(false);
+                        Destroy(nodePiece.gameObject);
+                        //dead.Add(nodePiece);
                     }
                     node.SetPiece(null);
                 }
@@ -111,13 +114,20 @@ public class Match3 : MonoBehaviour
                         score += match6plusExtraScore;
                     }
                 }
-
+                bool flag = true;
+                foreach (KilledPiece kill in killed) {
+                    if (kill.falling) {
+                        flag = false;
+                        break;
+                    }
+                }
+                Debug.Log(flag);
                 ApplyGravityToBoard();
             }
-
             flipped.Remove(flip); //remove the flip after update
             update.Remove(piece);
         }
+        
         scoreBoard.UpdateScore(score);
     }
 
@@ -153,8 +163,8 @@ public class Match3 : MonoBehaviour
                             piece = revived;
                             dead.RemoveAt(0);
 
-                        } else
-                        { //shouldnt be called if there's hole from the start and you unlock by doing something
+                        } else { 
+                            //shouldnt be called if there's hole from the start and you unlock by doing something
                             GameObject obj = Instantiate(nodePiece, gameBoard);
                             NodePiece n = obj.GetComponent<NodePiece>();
                             piece = n;
@@ -195,6 +205,12 @@ public class Match3 : MonoBehaviour
         dead = new List<NodePiece>();
         fills = new int[width];
         killed = new List<KilledPiece>();
+        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
+        float _width = bgSpriteRenderer.bounds.size.x;
+        float _height = bgSpriteRenderer.bounds.size.y;
+        float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
+        float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
+        //bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width, worldScreenHeight/_height,1);
         InitializeBoard();
         VerifyBoard();
         InstantiateBoard();
