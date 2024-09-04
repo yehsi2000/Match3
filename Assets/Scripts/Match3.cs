@@ -134,49 +134,46 @@ public class Match3 : MonoBehaviour
     void ApplyGravityToBoard(){
         for(int x= 0; x<width; x++){
             for(int y = height-1; y>=0; y--){
-                Point p = new Point(x,y);
-                Node node = getNodeAtPoint(p);
-                int val = getValueAtPoint(p);
-                if(val!=0) continue; //if not a hole , do nothing
+                //iterate from the top to bottom
+                Point curPoint = new Point(x,y);
+                Node curNode = getNodeAtPoint(curPoint);
+                int curVal = getValueAtPoint(curPoint);
+                if(curVal!=0) continue; //find blank space where connected block disappeared
                 for(int ny = y-1; ny >= -1; ny--){
+                    //y=-1 is above the top line
+                    //for pieces above this blank drop down
                     Point next = new Point(x, ny) ;
                     int nextVal = getValueAtPoint(next);
-                    if(nextVal==0) continue;
-                    if(nextVal != -1) { //if we did not hit end then use this to fill the current hole
+                    if(nextVal==0) continue; //another blank, find upper one
+                    if(nextVal != -1) { 
+                        //if we did not hit top(or intentional hole) then drag upper ones down to the hole
                         Node got = getNodeAtPoint(next);
                         NodePiece piece = got.GetPiece();
 
-                        //Set the hole
-                        node.SetPiece(piece);
+                        //Set the hole to upper piece
+                        curNode.SetPiece(piece);
                         update.Add(piece);
 
-                        //Replace the hole
-                        got.SetPiece(null);
-                    } else { // use dead ones or create new pieces to fill holes(hit a-1) only if we choose to
-                        int newVal = fillPiece();
-                        NodePiece piece;
-                        Point fallPoint = new Point(x, -1 - fills[x]);
+                        got.SetPiece(null); //Replace the upper piece to blank
+                    } else {
+                        //if above is top wall or hole create new piece and drop it from the top
+                        int newVal = GetRandomPieceVal();
+                        
+                        //y=-1 is above top line, fills[x] = offset up, as we are dropping more than 1 piece
+                        Point fallPoint = new Point(x, -1 - fills[x]); 
+                        
+                        //create new piece
+                        GameObject obj = Instantiate(nodePiece, gameBoard);
+                        NodePiece piece = obj.GetComponent<NodePiece>();
 
-                        if (dead.Count > 0) {
-                            NodePiece revived = dead[0];
-                            revived.gameObject.SetActive(true);
-                            piece = revived;
-                            dead.RemoveAt(0);
+                        //put new piece on top so it looks like falling down
+                        piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
+                        piece.rect.anchoredPosition = GetPositionFromPoint(fallPoint); 
 
-                        } else { 
-                            //shouldnt be called if there's hole from the start and you unlock by doing something
-                            GameObject obj = Instantiate(nodePiece, gameBoard);
-                            NodePiece n = obj.GetComponent<NodePiece>();
-                            piece = n;
-                        }
-
-                        piece.Initialize(newVal, p, pieces[newVal - 1], nodeSize);
-                        piece.rect.anchoredPosition = GetPositionFromPoint(fallPoint); //put new piece on top so it looks like falling down
-
-                        Node hole = getNodeAtPoint(p);
+                        Node hole = getNodeAtPoint(curPoint);
                         hole.SetPiece(piece);
                         ResetPiece(piece);
-                        fills[x]++;
+                        fills[x]++; //move offset upper for more piece to drop
 
                     }
                     break;
@@ -205,12 +202,14 @@ public class Match3 : MonoBehaviour
         dead = new List<NodePiece>();
         fills = new int[width];
         killed = new List<KilledPiece>();
-        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
-        float _width = bgSpriteRenderer.bounds.size.x;
-        float _height = bgSpriteRenderer.bounds.size.y;
-        float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
-        float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
-        //bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width, worldScreenHeight/_height,1);
+        /* set sprite image background to camera size, currently not used
+         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
+         float _width = bgSpriteRenderer.bounds.size.x;
+         float _height = bgSpriteRenderer.bounds.size.y;
+         float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
+         float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
+        bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width, worldScreenHeight/_height,1);
+        */
         InitializeBoard();
         VerifyBoard();
         InstantiateBoard();
@@ -222,7 +221,7 @@ public class Match3 : MonoBehaviour
         board = new Node[width, height];
         for(int y = 0; y<height; y++){
             for(int x=0; x<width; x++){
-                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? -1 : fillPiece(), new Point(x,y));
+                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? -1 : GetRandomPieceVal(), new Point(x,y));
             }
         }
     }
@@ -262,7 +261,7 @@ public class Match3 : MonoBehaviour
         }
     }
 
-    int fillPiece()
+    int GetRandomPieceVal()
     {
         int val = 1;
         val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;

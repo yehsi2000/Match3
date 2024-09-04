@@ -22,7 +22,6 @@ public class NodePiece : MonoBehaviour
         img = GetComponent<SpriteRenderer>();
         rect = GetComponent<RectTransform>();
         nodeSize = size;
-        //img.size = new Vector2(nodeSize, nodeSize);
 
         value = v;
         SetIndex(p);
