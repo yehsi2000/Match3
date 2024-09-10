@@ -2,9 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
-public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+public class NodePiece : MonoBehaviour
 {
     public int value;
     public Point index;
@@ -16,11 +15,11 @@ public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     public float moveSpeed = 16f;
 
     bool updating;
-    Image img;
+    SpriteRenderer img;
     int nodeSize;
 
     public void Initialize(int v, Point p, Sprite piece, int size){
-        img = GetComponent<Image>();
+        img = GetComponent<SpriteRenderer>();
         rect = GetComponent<RectTransform>();
         nodeSize = size;
 
@@ -52,6 +51,8 @@ public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     }
 
     public bool UpdatePiece(){
+        if (rect == null) return false;
+
         if(Vector3.Distance(rect.anchoredPosition, pos) > 1){
             MovePositionTo(pos);
             updating = true;
@@ -64,14 +65,16 @@ public class NodePiece : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         }
     }
 
-    public void OnPointerDown(PointerEventData eventData)
+    void OnMouseDown()
     {
+        Debug.Log("mouse down");
         if(updating) return;
         MovePieces.instance.MovePiece(this);
     }
 
-    public void OnPointerUp(PointerEventData eventData)
+    void OnMouseUp()
     {
+        Debug.Log("mouse up");
         MovePieces.instance.DropPiece();
     }
 }
