@@ -43,6 +43,10 @@ public class Match3 : MonoBehaviour
 
     System.Random random;
 
+    private void Awake() {
+        KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
+    }
+
     void Start()
     {
         StartGame();
@@ -63,7 +67,7 @@ public class Match3 : MonoBehaviour
             NodePiece piece = update[i];
             if (!piece.UpdatePiece()) finishedUpdating.Add(piece);
         }
-
+        bool doneRemoving = false;
         //check if flipped pieces could make a match, else revert flip
         for (int i = 0; i < finishedUpdating.Count; i++){
             NodePiece piece = finishedUpdating[i]; //updated piece
@@ -114,20 +118,14 @@ public class Match3 : MonoBehaviour
                         score += match6plusExtraScore;
                     }
                 }
-                bool flag = true;
-                foreach (KilledPiece kill in killed) {
-                    if (kill.falling) {
-                        flag = false;
-                        break;
-                    }
-                }
-                Debug.Log(flag);
-                ApplyGravityToBoard();
             }
             flipped.Remove(flip); //remove the flip after update
-            update.Remove(piece);
+            update.Remove(piece); //done updating the piece
+            
         }
-        
+        if (killed.Count == 0) doneRemoving = true;
+        Debug.Log(killed.Count);
+        if (doneRemoving) ApplyGravityToBoard();
         scoreBoard.UpdateScore(score);
     }
 
@@ -275,30 +273,20 @@ public class Match3 : MonoBehaviour
 
     void KillPiece(Point p)
     {
-        List<KilledPiece> available = new List<KilledPiece>();
-        for (int i = 0; i < killed.Count; i++)
+        int val = getValueAtPoint(p) - 1;
+        if (val < 0) return;
+        GameObject kill = GameObject.Instantiate(killedPiece, killedBoard);
+        KilledPiece kPiece = kill.GetComponent<KilledPiece>();
+        
+        if (kPiece != null && val < pieces.Length)
         {
-            if (!killed[i].falling) available.Add(killed[i]);
-        }
-
-        KilledPiece set = null;
-        if (available.Count > 0)
-        {
-            set = available[0];
-        }
-        else
-        {
-            GameObject kill = GameObject.Instantiate(killedPiece, killedBoard);
-            KilledPiece kPiece = kill.GetComponent<KilledPiece>();
-            set = kPiece;
+            kPiece.Initialize(pieces[val], GetPositionFromPoint(p));
             killed.Add(kPiece);
         }
+    }
 
-        int val = getValueAtPoint(p) - 1;
-        if (set != null && val >= 0 && val < pieces.Length)
-        {
-            set.Initialize(pieces[val], GetPositionFromPoint(p));
-        }
+    public void KilledPieceRemoved(KilledPiece killedPiece) {
+        killed.Remove(killedPiece);
     }
 
     public void FlipPieces(Point one, Point two, bool main){
@@ -346,6 +334,7 @@ public class Match3 : MonoBehaviour
                 AddPoints(ref connected, line); //Add these points to the overarching connected list
             }
         }
+
         for(int i = 0; i < 2; i++) {
             List<Point> line = new List<Point>();
             line.Add(p);
@@ -390,7 +379,7 @@ public class Match3 : MonoBehaviour
                 List<Point> more = isConnected(connected[i], false);
                 int additional_match = AddPoints(ref connected, more);
                 if (additional_match != 0) {
-                    Debug.LogFormat("add : %d more : %d",additional_match,more.Count);
+                    Debug.LogFormat("add : {0} more : {1}",additional_match,more.Count);
                 }
             }
         }

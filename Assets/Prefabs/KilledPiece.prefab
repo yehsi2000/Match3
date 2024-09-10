@@ -104,7 +104,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   falling: 0
   speed: 16
-  gravity: 100
+  gravity: 100.3
+  onKilledPieceRemove:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 11500000, guid: 7ada8616bda72854b83316a4b29c0655, type: 3}
+        m_TargetAssemblyTypeName: UnityEngine.Object, UnityEngine
+        m_MethodName: 
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 1
 --- !u!61 &3353510223673151814
 BoxCollider2D:
   m_ObjectHideFlags: 0
