@@ -67,8 +67,10 @@ public class NodePiece : MonoBehaviour
 
     void OnMouseDown()
     {
-        Debug.Log("mouse down");
-        if(updating) return;
+        if (!Match3.isClickable) {
+            Debug.Log("Cannot click");
+        };
+        if (updating || !Match3.isClickable) return;
         MovePieces.instance.MovePiece(this);
     }
 

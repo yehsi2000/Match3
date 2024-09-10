@@ -7,10 +7,12 @@ public class Match3 : MonoBehaviour
 {
     public ArrayLayout boardLayout;
 
+    public static bool isClickable = true;
+
     [Header("UI Elements")]
     public Sprite[] pieces;
-    public RectTransform gameBoard;
-    public RectTransform killedBoard;
+    public GameObject gameBoard;
+    public GameObject killedBoard;
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
     public ScoreBoard scoreBoard;
@@ -29,10 +31,13 @@ public class Match3 : MonoBehaviour
     public int match6plusExtraScore = 100;
     [Header("NodeSize")]
     public int nodeSize = 80;
+    [Header("Time")]
+    public float clickStopInterval = 0.5f;
 
     int width = 14;
     int height = 9;
     int[] fills;
+    float clickableTime = 0f;
     Node[,] board;
     
 
@@ -56,10 +61,15 @@ public class Match3 : MonoBehaviour
     void Update(){
         //update timer
         if (!timer.UpdateTimer()) {
+            gameBoard.SetActive(false);
+            killedBoard.SetActive(false);
             gameEndScreen.SetActive(true);
             finalScore.text = "Final Score : " + score;
             this.enabled = false;
         }
+        //block clicks while new blocks falling
+        if (clickableTime <= 0) isClickable = true;
+        else clickableTime -= Time.deltaTime;
 
         //update moving pieces and store it for flip check
         List<NodePiece> finishedUpdating = new List<NodePiece>();
@@ -67,7 +77,8 @@ public class Match3 : MonoBehaviour
             NodePiece piece = update[i];
             if (!piece.UpdatePiece()) finishedUpdating.Add(piece);
         }
-        bool doneRemoving = false;
+        
+        //bool doneRemoving = false;
         //check if flipped pieces could make a match, else revert flip
         for (int i = 0; i < finishedUpdating.Count; i++){
             NodePiece piece = finishedUpdating[i]; //updated piece
@@ -92,6 +103,7 @@ public class Match3 : MonoBehaviour
             }
             else {
                 //made a match
+                
                 int[] matchTypeCnt = new int[5];
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
@@ -118,19 +130,21 @@ public class Match3 : MonoBehaviour
                         score += match6plusExtraScore;
                     }
                 }
+                isClickable = false;
+                clickableTime = clickStopInterval;
+                Invoke("ApplyGravityToBoard",0.5f);
             }
             flipped.Remove(flip); //remove the flip after update
             update.Remove(piece); //done updating the piece
             
         }
-        if (killed.Count == 0) doneRemoving = true;
-        Debug.Log(killed.Count);
-        if (doneRemoving) ApplyGravityToBoard();
+        //if (killed.Count == 0) doneRemoving = true;
+        //if (doneRemoving) ApplyGravityToBoard();
         scoreBoard.UpdateScore(score);
     }
 
     void ApplyGravityToBoard(){
-        for(int x= 0; x<width; x++){
+        for (int x= 0; x<width; x++){
             for(int y = height-1; y>=0; y--){
                 //iterate from the top to bottom
                 Point curPoint = new Point(x,y);
@@ -161,7 +175,7 @@ public class Match3 : MonoBehaviour
                         Point fallPoint = new Point(x, -1 - fills[x]); 
                         
                         //create new piece
-                        GameObject obj = Instantiate(nodePiece, gameBoard);
+                        GameObject obj = Instantiate(nodePiece, gameBoard.transform);
                         NodePiece piece = obj.GetComponent<NodePiece>();
 
                         //put new piece on top so it looks like falling down
@@ -200,14 +214,17 @@ public class Match3 : MonoBehaviour
         dead = new List<NodePiece>();
         fills = new int[width];
         killed = new List<KilledPiece>();
-        /* set sprite image background to camera size, currently not used
-         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
-         float _width = bgSpriteRenderer.bounds.size.x;
-         float _height = bgSpriteRenderer.bounds.size.y;
-         float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
-         float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
-        bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width, worldScreenHeight/_height,1);
-        */
+        gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        // set sprite image background to camera size, currently not used
+        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
+        float _width = bgSpriteRenderer.bounds.size.x;
+        float _height = bgSpriteRenderer.bounds.size.y;
+        //float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
+        //float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
+        //bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width*nodeSize*width/1024, worldScreenHeight/_height*nodeSize*height/640,1);
+        bgImageObject.transform.localScale = new Vector3(nodeSize*(width+1) / _width, nodeSize*(height+1)/_height,1);
+        
         InitializeBoard();
         VerifyBoard();
         InstantiateBoard();
@@ -249,7 +266,7 @@ public class Match3 : MonoBehaviour
                 
                 int val = node.value;
                 if (val <= 0) continue;
-                GameObject p = Instantiate(nodePiece, gameBoard);
+                GameObject p = Instantiate(nodePiece, gameBoard.transform);
                 NodePiece piece =p.GetComponent<NodePiece>();
                 RectTransform rect = p.GetComponent<RectTransform>();
                 rect.anchoredPosition = new Vector2(nodeSize/2 + (nodeSize * x), -nodeSize/2 - (nodeSize*y));
@@ -275,7 +292,7 @@ public class Match3 : MonoBehaviour
     {
         int val = getValueAtPoint(p) - 1;
         if (val < 0) return;
-        GameObject kill = GameObject.Instantiate(killedPiece, killedBoard);
+        GameObject kill = GameObject.Instantiate(killedPiece, killedBoard.transform);
         KilledPiece kPiece = kill.GetComponent<KilledPiece>();
         
         if (kPiece != null && val < pieces.Length)
