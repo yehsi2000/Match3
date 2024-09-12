@@ -41,7 +41,7 @@ public class KilledPiece : MonoBehaviour
         if (!GetComponent<Renderer>().isVisible) {
             //falling = false;
             onKilledPieceRemove.Invoke(this);
-            Destroy(this);
+            Destroy(this.gameObject);
         }
             
             
