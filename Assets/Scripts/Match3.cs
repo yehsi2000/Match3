@@ -11,6 +11,7 @@ public class Match3 : MonoBehaviour
 
     [Header("UI Elements")]
     public Sprite[] pieces;
+    public Sprite[] specialPieces;
     public GameObject gameBoard;
     public GameObject killedBoard;
     public GameObject gameEndScreen;
@@ -37,8 +38,8 @@ public class Match3 : MonoBehaviour
     int width = 14;
     int height = 9;
     int[] fills;
-    float clickableTime = 0f;
-    Node[,] board;
+    //float clickableTime = 0f;
+    public Node[,] board;
     
 
     List<NodePiece> update;
@@ -68,8 +69,8 @@ public class Match3 : MonoBehaviour
             this.enabled = false;
         }
         //block clicks while new blocks falling
-        if (clickableTime <= 0) isClickable = true;
-        else clickableTime -= Time.deltaTime;
+//         if (clickableTime <= 0) isClickable = true;
+//         else clickableTime -= Time.deltaTime;
 
         //update moving pieces and store it for flip check
         List<NodePiece> finishedUpdating = new List<NodePiece>();
@@ -103,7 +104,6 @@ public class Match3 : MonoBehaviour
             }
             else {
                 //made a match
-                
                 int[] matchTypeCnt = new int[5];
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
@@ -119,20 +119,24 @@ public class Match3 : MonoBehaviour
                     }
                     node.SetPiece(null);
                 }
+                int matchMax = 0;
                 for (int j= 0; j < 5;++j) {
                     // val = j+1
                     // 1=cube, 2=sphere, 3=cylinder, 4=pyramid, 5=diamond,
                     if (matchTypeCnt[j] == 4) {
                         score += match4ExtraScore;
+                        matchMax = 1;
                     } else if (matchTypeCnt[j] == 5) {
                         score += match5ExtraScore;
+                        matchMax = 2;
                     } else if (matchTypeCnt[j] > 6) {
                         score += match6plusExtraScore;
+                        matchMax = 3;
                     }
                 }
-                isClickable = false;
-                clickableTime = clickStopInterval;
-                Invoke("ApplyGravityToBoard",0.5f);
+                //                 isClickable = false;
+                //                 clickableTime = clickStopInterval;
+                ApplyGravityToBoard(connected[0].x, matchMax);
             }
             flipped.Remove(flip); //remove the flip after update
             update.Remove(piece); //done updating the piece
@@ -143,7 +147,8 @@ public class Match3 : MonoBehaviour
         scoreBoard.UpdateScore(score);
     }
 
-    void ApplyGravityToBoard(){
+    void ApplyGravityToBoard(int specialX, int specialPieceVal){
+        bool spawnedSpecial = false;
         for (int x= 0; x<width; x++){
             for(int y = height-1; y>=0; y--){
                 //iterate from the top to bottom
@@ -172,14 +177,17 @@ public class Match3 : MonoBehaviour
                         int newVal = GetRandomPieceVal();
                         
                         //y=-1 is above top line, fills[x] = offset up, as we are dropping more than 1 piece
-                        Point fallPoint = new Point(x, -1 - fills[x]); 
+                        Point fallPoint = new Point(x, -1 - fills[x]);
                         
                         //create new piece
                         GameObject obj = Instantiate(nodePiece, gameBoard.transform);
                         NodePiece piece = obj.GetComponent<NodePiece>();
 
                         //put new piece on top so it looks like falling down
-                        piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
+                        if (!spawnedSpecial && x==specialX  && specialPieceVal > 0) {
+                            piece.Initialize(99, curPoint, specialPieces[specialPieceVal - 1], nodeSize);
+                            spawnedSpecial = true;
+                        } else piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
                         piece.rect.anchoredPosition = GetPositionFromPoint(fallPoint); 
 
                         Node hole = getNodeAtPoint(curPoint);

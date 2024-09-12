@@ -741,6 +741,10 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 894289d5c1c1ca34290adccdca007418, type: 3}
   - {fileID: 21300000, guid: 1a234f2f27181564695b0b75cf66348c, type: 3}
   - {fileID: 21300000, guid: 91a5a14b496e1a241927fc89cb0dfe99, type: 3}
+  specialPieces:
+  - {fileID: 21300000, guid: fe1745b500f2f574aa098907f723ca12, type: 3}
+  - {fileID: 21300000, guid: 82d520879ae007c4b9830f4155c23353, type: 3}
+  - {fileID: 21300000, guid: 8d2ffc97bebc5a647b1c867dadb419bc, type: 3}
   gameBoard: {fileID: 759404410}
   killedBoard: {fileID: 1302741729}
   gameEndScreen: {fileID: 906328925}
@@ -756,7 +760,7 @@ MonoBehaviour:
   match5ExtraScore: 45
   match6plusExtraScore: 100
   nodeSize: 80
-  clickStopInterval: 0.5
+  clickStopInterval: 0
 --- !u!4 &951057382
 Transform:
   m_ObjectHideFlags: 0

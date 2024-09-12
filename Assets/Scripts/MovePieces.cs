@@ -40,7 +40,8 @@ public class MovePieces : MonoBehaviour
                     add = (new Point(0, (nDir.y > 0) ? -1 : 1));
             }
             newIndex.add(add); //new index for flicked piece
-
+            //bool isOpponentMoving = game.board[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
+           
             Vector2 pos = game.GetPositionFromPoint(moving.index);
             if (!newIndex.Equals(moving.index))
                 pos += Point.mult(new Point(add.x, -add.y), game.nodeSize/4).ToVector();
@@ -57,8 +58,9 @@ public class MovePieces : MonoBehaviour
 
     public void DropPiece()
     {
+        bool isOpponentMoving = game.board[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
         if (moving == null) return;
-        if (!newIndex.Equals(moving.index))
+        if (!newIndex.Equals(moving.index) && !isOpponentMoving)
             game.FlipPieces(moving.index, newIndex, true);
         else
             game.ResetPiece(moving);
