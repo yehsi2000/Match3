@@ -44,6 +44,9 @@ TagManager:
   - name: Puzzle
     uniqueID: 1936058515
     locked: 0
+  - name: Killed
+    uniqueID: 2211975789
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0

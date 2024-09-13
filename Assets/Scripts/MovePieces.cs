@@ -31,7 +31,7 @@ public class MovePieces : MonoBehaviour
 
             newIndex = Point.clone(moving.index);
             Point add = Point.zero;
-            if (dir.magnitude > game.nodeSize/2) {
+            if (dir.magnitude > game.nodeSize/2f) {
                 // If our mouse is away from the starting point for certain amount,
                 // select move position based on most moved direction (by checking abs x,y val)
                 if (aDir.x > aDir.y)
@@ -44,7 +44,7 @@ public class MovePieces : MonoBehaviour
            
             Vector2 pos = game.GetPositionFromPoint(moving.index);
             if (!newIndex.Equals(moving.index))
-                pos += Point.mult(new Point(add.x, -add.y), game.nodeSize/4).ToVector();
+                pos += new Point(add.x, -add.y).ToVector() * game.nodeSize / 4f;
             moving.MovePositionTo(pos);
         }
     }

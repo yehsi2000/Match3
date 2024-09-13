@@ -33,7 +33,7 @@ public class Match3 : MonoBehaviour
     public int match5ExtraScore = 50;
     public int match6plusExtraScore = 100;
     [Header("NodeSize")]
-    public int nodeSize = 80;
+    public float nodeSize = 0.8f;
     [Header("Time")]
     public float clickStopInterval = 0.5f;
     [Header("Audio")]
@@ -41,8 +41,8 @@ public class Match3 : MonoBehaviour
     public AudioClip[] audioclips;
 
 
-    int width = 14;
-    int height = 9;
+    private static int width = 14;
+    private static int height = 9;
     int[] fills;
     //float clickableTime = 0f;
     public Node[,] board;
@@ -55,6 +55,13 @@ public class Match3 : MonoBehaviour
     List<ParticleSystem> particles;
 
     System.Random random;
+
+    public static int getWidth() {
+        return width;
+    }
+    public static int getHeight() {
+        return height;
+    }
 
     private void Awake() {
         KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
@@ -84,7 +91,7 @@ public class Match3 : MonoBehaviour
         List<NodePiece> finishedUpdating = new List<NodePiece>();
         for(int i = 0; i < update.Count; i++){
             NodePiece piece = update[i];
-            if (!piece.UpdatePiece()) finishedUpdating.Add(piece);
+            if (piece!=null && !piece.UpdatePiece()) finishedUpdating.Add(piece);
         }
         
         //bool doneRemoving = false;
@@ -199,7 +206,7 @@ public class Match3 : MonoBehaviour
                             piece.Initialize(99, curPoint, specialPieces[specialPieceVal - 1], nodeSize);
                             spawnedSpecial = true;
                         } else piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
-                        piece.rect.anchoredPosition = GetPositionFromPoint(fallPoint); 
+                        piece.transform.position = GetPositionFromPoint(fallPoint); 
 
                         Node hole = getNodeAtPoint(curPoint);
                         hole.SetPiece(piece);
@@ -234,8 +241,8 @@ public class Match3 : MonoBehaviour
         fills = new int[width];
         killed = new List<KilledPiece>();
         particles = new List<ParticleSystem>();
-        gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
-        killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         audio = GetComponent<AudioSource>();
         // set sprite image background to camera size, currently not used
         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
@@ -289,8 +296,8 @@ public class Match3 : MonoBehaviour
                 if (val <= 0) continue;
                 GameObject p = Instantiate(nodePiece, gameBoard.transform);
                 NodePiece piece =p.GetComponent<NodePiece>();
-                RectTransform rect = p.GetComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2(nodeSize/2 + (nodeSize * x), -nodeSize/2 - (nodeSize*y));
+                //RectTransform rect = p.GetComponent<RectTransform>();
+                p.transform.position = new Vector3(nodeSize/2 + (nodeSize * (x-width/2f)), -nodeSize/2 - (nodeSize*(y-height/2f)));
                 piece.Initialize(val, new Point(x,y), pieces[val-1], nodeSize);
                 node.SetPiece(piece);
             }
@@ -337,7 +344,7 @@ public class Match3 : MonoBehaviour
         }
 
         Debug.Log(pointPos);
-        particle.gameObject.GetComponent<RectTransform>().anchoredPosition = pointPos;
+        particle.transform.position = pointPos;
         particle.Play();
         
         if (kPiece != null && val < pieces.Length)
@@ -502,7 +509,7 @@ public class Match3 : MonoBehaviour
     }
 
     public Vector2 GetPositionFromPoint(Point p){
-        return new Vector2(nodeSize/2 + (nodeSize * p.x), -nodeSize/2 - (nodeSize*p.y));
+        return new Vector3(nodeSize/2 + (nodeSize * (p.x-width/2f)), -nodeSize/2 - (nodeSize * (p.y-height/2f)));
     }
 }
 

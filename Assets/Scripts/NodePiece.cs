@@ -9,18 +9,15 @@ public class NodePiece : MonoBehaviour
     public Point index;
     [HideInInspector]
     public Vector2 pos;
-    [HideInInspector]
-    public RectTransform rect;
     [SerializeField]
     public float moveSpeed = 16f;
 
     bool updating;
     SpriteRenderer img;
-    int nodeSize;
+    float nodeSize;
 
-    public void Initialize(int v, Point p, Sprite piece, int size){
+    public void Initialize(int v, Point p, Sprite piece, float size){
         img = GetComponent<SpriteRenderer>();
-        rect = GetComponent<RectTransform>();
         nodeSize = size;
 
         value = v;
@@ -35,7 +32,10 @@ public class NodePiece : MonoBehaviour
     }
 
     public void ResetPosition(){
-        pos = new Vector2(nodeSize/2 + (nodeSize * index.x), -nodeSize/2 - (nodeSize * index.y));
+        pos = new Vector2(
+            nodeSize/2 + (nodeSize * ( index.x - Match3.getWidth()/2f )), 
+            -nodeSize/2 - (nodeSize * ( index.y - Match3.getHeight()/2f ))
+            );
     }
 
     void UpdateName(){
@@ -43,23 +43,22 @@ public class NodePiece : MonoBehaviour
     }
 
     public void MovePosition(Vector2 move){
-        rect.anchoredPosition += move * Time.deltaTime * moveSpeed;
+        transform.position += new Vector3(move.x,move.y,0) * Time.deltaTime * moveSpeed;
     }
 
     public void MovePositionTo(Vector2 move){
-        rect.anchoredPosition = Vector2.Lerp(rect.anchoredPosition, move, Time.deltaTime * moveSpeed);
+        transform.position = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
     }
 
     public bool UpdatePiece(){
-        if (rect == null) return false;
         //Debug.LogFormat("dist : {0} obj {1}",Vector3.Distance(rect.anchoredPosition, pos),this.index.x,this.index.y, this.updating);
-        if(Vector3.Distance(rect.anchoredPosition, pos) > 1){
+        if(Vector3.Distance(transform.position, pos) > nodeSize/64f){
             MovePositionTo(pos);
             updating = true;
             return true;
         }
         else {
-            rect.anchoredPosition = pos;
+            transform.position = pos;
             updating = false;
             return false;
         }

@@ -11,7 +11,7 @@ public class KilledPiece : MonoBehaviour
     public float gravity = 32f;
     static internal UnityEvent<KilledPiece> onKilledPieceRemove = new UnityEvent<KilledPiece>();
     Vector2 moveDir;
-    RectTransform rect;
+    
     SpriteRenderer img;
     
     // Start is called before the first frame update
@@ -23,9 +23,9 @@ public class KilledPiece : MonoBehaviour
         moveDir *= speed / 2;
 
         img = GetComponent<SpriteRenderer>();
-        rect = GetComponent<RectTransform>();
+        
         img.sprite = piece;
-        rect.anchoredPosition = start;
+        transform.position = start;
         
         
 
@@ -38,7 +38,7 @@ public class KilledPiece : MonoBehaviour
         if (!falling) return;
         moveDir.y -= Time.deltaTime * gravity;
         moveDir.x = Mathf.Lerp(moveDir.x, 0, Time.deltaTime);
-        rect.anchoredPosition += moveDir * Time.deltaTime * speed;
+        transform.position += new Vector3(moveDir.x * Time.deltaTime * speed,moveDir.y * Time.deltaTime,0);
         //Debug.Log(GetComponent<Renderer>().isVisible);
         //if (rect.position.x < -32f || rect.position.x > Screen.width + 32f || rect.position.y < -32f || rect.position.y > Screen.height + 32f)
         if (!GetComponent<Renderer>().isVisible) {
