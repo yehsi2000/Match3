@@ -52,7 +52,7 @@ public class NodePiece : MonoBehaviour
 
     public bool UpdatePiece(){
         if (rect == null) return false;
-
+        //Debug.LogFormat("dist : {0} obj {1}",Vector3.Distance(rect.anchoredPosition, pos),this.index.x,this.index.y, this.updating);
         if(Vector3.Distance(rect.anchoredPosition, pos) > 1){
             MovePositionTo(pos);
             updating = true;
@@ -65,10 +65,16 @@ public class NodePiece : MonoBehaviour
         }
     }
 
+    public bool GetUpdateState() {
+        return updating;
+    }
+
     void OnMouseDown()
     {
-        Debug.Log("mouse down");
-        if(updating) return;
+        if (!Match3.isClickable) {
+            Debug.Log("Cannot click");
+        };
+        if (updating || !Match3.isClickable) return;
         MovePieces.instance.MovePiece(this);
     }
 

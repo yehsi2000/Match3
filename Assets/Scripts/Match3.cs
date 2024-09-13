@@ -7,10 +7,13 @@ public class Match3 : MonoBehaviour
 {
     public ArrayLayout boardLayout;
 
+    public static bool isClickable = true;
+
     [Header("UI Elements")]
     public Sprite[] pieces;
-    public RectTransform gameBoard;
-    public RectTransform killedBoard;
+    public Sprite[] specialPieces;
+    public GameObject gameBoard;
+    public GameObject killedBoard;
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
     public ScoreBoard scoreBoard;
@@ -29,11 +32,14 @@ public class Match3 : MonoBehaviour
     public int match6plusExtraScore = 100;
     [Header("NodeSize")]
     public int nodeSize = 80;
+    [Header("Time")]
+    public float clickStopInterval = 0.5f;
 
     int width = 14;
     int height = 9;
     int[] fills;
-    Node[,] board;
+    //float clickableTime = 0f;
+    public Node[,] board;
     
 
     List<NodePiece> update;
@@ -42,6 +48,10 @@ public class Match3 : MonoBehaviour
     List<KilledPiece> killed;
 
     System.Random random;
+
+    private void Awake() {
+        KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
+    }
 
     void Start()
     {
@@ -52,10 +62,15 @@ public class Match3 : MonoBehaviour
     void Update(){
         //update timer
         if (!timer.UpdateTimer()) {
+            gameBoard.SetActive(false);
+            killedBoard.SetActive(false);
             gameEndScreen.SetActive(true);
             finalScore.text = "Final Score : " + score;
             this.enabled = false;
         }
+        //block clicks while new blocks falling
+//         if (clickableTime <= 0) isClickable = true;
+//         else clickableTime -= Time.deltaTime;
 
         //update moving pieces and store it for flip check
         List<NodePiece> finishedUpdating = new List<NodePiece>();
@@ -63,7 +78,8 @@ public class Match3 : MonoBehaviour
             NodePiece piece = update[i];
             if (!piece.UpdatePiece()) finishedUpdating.Add(piece);
         }
-
+        
+        //bool doneRemoving = false;
         //check if flipped pieces could make a match, else revert flip
         for (int i = 0; i < finishedUpdating.Count; i++){
             NodePiece piece = finishedUpdating[i]; //updated piece
@@ -103,36 +119,37 @@ public class Match3 : MonoBehaviour
                     }
                     node.SetPiece(null);
                 }
+                int matchMax = 0;
                 for (int j= 0; j < 5;++j) {
                     // val = j+1
                     // 1=cube, 2=sphere, 3=cylinder, 4=pyramid, 5=diamond,
                     if (matchTypeCnt[j] == 4) {
                         score += match4ExtraScore;
+                        matchMax = 1;
                     } else if (matchTypeCnt[j] == 5) {
                         score += match5ExtraScore;
+                        matchMax = 2;
                     } else if (matchTypeCnt[j] > 6) {
                         score += match6plusExtraScore;
+                        matchMax = 3;
                     }
                 }
-                bool flag = true;
-                foreach (KilledPiece kill in killed) {
-                    if (kill.falling) {
-                        flag = false;
-                        break;
-                    }
-                }
-                Debug.Log(flag);
-                ApplyGravityToBoard();
+                //                 isClickable = false;
+                //                 clickableTime = clickStopInterval;
+                ApplyGravityToBoard(connected[0].x, matchMax);
             }
             flipped.Remove(flip); //remove the flip after update
-            update.Remove(piece);
+            update.Remove(piece); //done updating the piece
+            
         }
-        
+        //if (killed.Count == 0) doneRemoving = true;
+        //if (doneRemoving) ApplyGravityToBoard();
         scoreBoard.UpdateScore(score);
     }
 
-    void ApplyGravityToBoard(){
-        for(int x= 0; x<width; x++){
+    void ApplyGravityToBoard(int specialX, int specialPieceVal){
+        bool spawnedSpecial = false;
+        for (int x= 0; x<width; x++){
             for(int y = height-1; y>=0; y--){
                 //iterate from the top to bottom
                 Point curPoint = new Point(x,y);
@@ -160,14 +177,17 @@ public class Match3 : MonoBehaviour
                         int newVal = GetRandomPieceVal();
                         
                         //y=-1 is above top line, fills[x] = offset up, as we are dropping more than 1 piece
-                        Point fallPoint = new Point(x, -1 - fills[x]); 
+                        Point fallPoint = new Point(x, -1 - fills[x]);
                         
                         //create new piece
-                        GameObject obj = Instantiate(nodePiece, gameBoard);
+                        GameObject obj = Instantiate(nodePiece, gameBoard.transform);
                         NodePiece piece = obj.GetComponent<NodePiece>();
 
                         //put new piece on top so it looks like falling down
-                        piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
+                        if (!spawnedSpecial && x==specialX  && specialPieceVal > 0) {
+                            piece.Initialize(99, curPoint, specialPieces[specialPieceVal - 1], nodeSize);
+                            spawnedSpecial = true;
+                        } else piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
                         piece.rect.anchoredPosition = GetPositionFromPoint(fallPoint); 
 
                         Node hole = getNodeAtPoint(curPoint);
@@ -202,14 +222,17 @@ public class Match3 : MonoBehaviour
         dead = new List<NodePiece>();
         fills = new int[width];
         killed = new List<KilledPiece>();
-        /* set sprite image background to camera size, currently not used
-         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
-         float _width = bgSpriteRenderer.bounds.size.x;
-         float _height = bgSpriteRenderer.bounds.size.y;
-         float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
-         float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
-        bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width, worldScreenHeight/_height,1);
-        */
+        gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        // set sprite image background to camera size, currently not used
+        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
+        float _width = bgSpriteRenderer.bounds.size.x;
+        float _height = bgSpriteRenderer.bounds.size.y;
+        //float worldScreenHeight = (float)(Camera.main.orthographicSize * 2.0f);
+        //float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
+        //bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width*nodeSize*width/1024, worldScreenHeight/_height*nodeSize*height/640,1);
+        bgImageObject.transform.localScale = new Vector3(nodeSize*(width+1) / _width, nodeSize*(height+1)/_height,1);
+        
         InitializeBoard();
         VerifyBoard();
         InstantiateBoard();
@@ -251,7 +274,7 @@ public class Match3 : MonoBehaviour
                 
                 int val = node.value;
                 if (val <= 0) continue;
-                GameObject p = Instantiate(nodePiece, gameBoard);
+                GameObject p = Instantiate(nodePiece, gameBoard.transform);
                 NodePiece piece =p.GetComponent<NodePiece>();
                 RectTransform rect = p.GetComponent<RectTransform>();
                 rect.anchoredPosition = new Vector2(nodeSize/2 + (nodeSize * x), -nodeSize/2 - (nodeSize*y));
@@ -275,30 +298,20 @@ public class Match3 : MonoBehaviour
 
     void KillPiece(Point p)
     {
-        List<KilledPiece> available = new List<KilledPiece>();
-        for (int i = 0; i < killed.Count; i++)
+        int val = getValueAtPoint(p) - 1;
+        if (val < 0) return;
+        GameObject kill = GameObject.Instantiate(killedPiece, killedBoard.transform);
+        KilledPiece kPiece = kill.GetComponent<KilledPiece>();
+        
+        if (kPiece != null && val < pieces.Length)
         {
-            if (!killed[i].falling) available.Add(killed[i]);
-        }
-
-        KilledPiece set = null;
-        if (available.Count > 0)
-        {
-            set = available[0];
-        }
-        else
-        {
-            GameObject kill = GameObject.Instantiate(killedPiece, killedBoard);
-            KilledPiece kPiece = kill.GetComponent<KilledPiece>();
-            set = kPiece;
+            kPiece.Initialize(pieces[val], GetPositionFromPoint(p));
             killed.Add(kPiece);
         }
+    }
 
-        int val = getValueAtPoint(p) - 1;
-        if (set != null && val >= 0 && val < pieces.Length)
-        {
-            set.Initialize(pieces[val], GetPositionFromPoint(p));
-        }
+    public void KilledPieceRemoved(KilledPiece killedPiece) {
+        killed.Remove(killedPiece);
     }
 
     public void FlipPieces(Point one, Point two, bool main){
@@ -346,6 +359,7 @@ public class Match3 : MonoBehaviour
                 AddPoints(ref connected, line); //Add these points to the overarching connected list
             }
         }
+
         for(int i = 0; i < 2; i++) {
             List<Point> line = new List<Point>();
             line.Add(p);
@@ -390,7 +404,7 @@ public class Match3 : MonoBehaviour
                 List<Point> more = isConnected(connected[i], false);
                 int additional_match = AddPoints(ref connected, more);
                 if (additional_match != 0) {
-                    Debug.LogFormat("add : %d more : %d",additional_match,more.Count);
+                    Debug.LogFormat("add : {0} more : {1}",additional_match,more.Count);
                 }
             }
         }

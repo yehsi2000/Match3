@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.Events;
 
 public class KilledPiece : MonoBehaviour
 {
@@ -9,6 +9,7 @@ public class KilledPiece : MonoBehaviour
 
     public float speed = 16f;
     public float gravity = 32f;
+    static internal UnityEvent<KilledPiece> onKilledPieceRemove = new UnityEvent<KilledPiece>();
     Vector2 moveDir;
     RectTransform rect;
     SpriteRenderer img;
@@ -27,16 +28,22 @@ public class KilledPiece : MonoBehaviour
 
     }
 
+
+
     void Update()
     {
         if (!falling) return;
         moveDir.y -= Time.deltaTime * gravity;
         moveDir.x = Mathf.Lerp(moveDir.x, 0, Time.deltaTime);
         rect.anchoredPosition += moveDir * Time.deltaTime * speed;
-        Debug.Log(GetComponent<Renderer>().isVisible);
+        //Debug.Log(GetComponent<Renderer>().isVisible);
         //if (rect.position.x < -32f || rect.position.x > Screen.width + 32f || rect.position.y < -32f || rect.position.y > Screen.height + 32f)
-        if (!GetComponent<Renderer>().isVisible)
-            Destroy(this);
+        if (!GetComponent<Renderer>().isVisible) {
             //falling = false;
+            onKilledPieceRemove.Invoke(this);
+            Destroy(this.gameObject);
+        }
+            
+            
     }
 }
