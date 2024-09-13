@@ -36,6 +36,9 @@ public class Match3 : MonoBehaviour
     public int nodeSize = 80;
     [Header("Time")]
     public float clickStopInterval = 0.5f;
+    [Header("Audio")]
+    AudioSource audio;
+    public AudioClip[] audioclips;
 
 
     int width = 14;
@@ -64,6 +67,7 @@ public class Match3 : MonoBehaviour
     }
 
     void Update(){
+        //audio played
         //update timer
         if (!timer.UpdateTimer()) {
             gameBoard.SetActive(false);
@@ -141,7 +145,10 @@ public class Match3 : MonoBehaviour
                 //                 isClickable = false;
                 //                 clickableTime = clickStopInterval;
                 ApplyGravityToBoard(connected[0].x, matchMax);
+                audio.clip = audioclips[Random.Range(0, audioclips.Length - 1)];
+                audio.Play();
             }
+            
             flipped.Remove(flip); //remove the flip after update
             update.Remove(piece); //done updating the piece
             
@@ -229,6 +236,7 @@ public class Match3 : MonoBehaviour
         particles = new List<ParticleSystem>();
         gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        audio = GetComponent<AudioSource>();
         // set sprite image background to camera size, currently not used
         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
         float _width = bgSpriteRenderer.bounds.size.x;

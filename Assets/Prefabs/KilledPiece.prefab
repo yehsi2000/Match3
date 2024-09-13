@@ -107,9 +107,9 @@ MonoBehaviour:
   speed: 16
   gravity: 100.3
   audioclips:
-  - {fileID: 8300000, guid: a430122f752745c498ef04b3bedd7d64, type: 3}
-  - {fileID: 8300000, guid: 575fdd16858f87c449eaeaa08a358149, type: 3}
-  - {fileID: 8300000, guid: 3b8bc137c02cec043aaf7fd0ef5d6760, type: 3}
+  - {fileID: 8300000, guid: f7cbcdf43d16bb24bb92fe6b5d7d9863, type: 3}
+  - {fileID: 8300000, guid: 2c6547e757f99064fb9aa194f4f22474, type: 3}
+  - {fileID: 8300000, guid: 094d4ff474829124da7aea22c6db1833, type: 3}
 --- !u!61 &3353510223673151814
 BoxCollider2D:
   m_ObjectHideFlags: 0
