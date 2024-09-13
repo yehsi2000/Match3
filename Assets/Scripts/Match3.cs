@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using static UnityEngine.ParticleSystem;
 
 public class Match3 : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class Match3 : MonoBehaviour
     [Header("Prefabs")]
     public GameObject nodePiece;
     public GameObject killedPiece;
+    public GameObject popParticle;
 
     [Header("Score")]
     public int score;
@@ -35,6 +37,7 @@ public class Match3 : MonoBehaviour
     [Header("Time")]
     public float clickStopInterval = 0.5f;
 
+
     int width = 14;
     int height = 9;
     int[] fills;
@@ -46,6 +49,7 @@ public class Match3 : MonoBehaviour
     List<FlippedPieces> flipped;
     List<NodePiece> dead;
     List<KilledPiece> killed;
+    List<ParticleSystem> particles;
 
     System.Random random;
 
@@ -108,7 +112,7 @@ public class Match3 : MonoBehaviour
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
-                    if(node.value>0)
+                    if(node.value>0 && node.value<5)
                         matchTypeCnt[node.value-1]++;
                     score += perPieceScore;
                     NodePiece nodePiece = node.GetPiece();
@@ -222,6 +226,7 @@ public class Match3 : MonoBehaviour
         dead = new List<NodePiece>();
         fills = new int[width];
         killed = new List<KilledPiece>();
+        particles = new List<ParticleSystem>();
         gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         // set sprite image background to camera size, currently not used
@@ -302,10 +307,34 @@ public class Match3 : MonoBehaviour
         if (val < 0) return;
         GameObject kill = GameObject.Instantiate(killedPiece, killedBoard.transform);
         KilledPiece kPiece = kill.GetComponent<KilledPiece>();
+
+        Vector2 pointPos = GetPositionFromPoint(p);
+
+        List<ParticleSystem> available = new List<ParticleSystem>();
+        for(int i=0; i<particles.Count; i++) {
+            Debug.Log(particles[i].isStopped);
+            if (particles[i].isStopped) {
+                available.Add(particles[i]);
+            }
+        }
+        ParticleSystem particle = null;
+        if(available.Count > 0) {
+            particle = available[0];
+        } else {
+            
+            GameObject particleObject = GameObject.Instantiate(popParticle,killedBoard.transform);
+            ParticleSystem objParticle = particleObject.GetComponent<ParticleSystem>();
+            particle = objParticle;
+            particles.Add(objParticle);
+        }
+
+        Debug.Log(pointPos);
+        particle.gameObject.GetComponent<RectTransform>().anchoredPosition = pointPos;
+        particle.Play();
         
         if (kPiece != null && val < pieces.Length)
         {
-            kPiece.Initialize(pieces[val], GetPositionFromPoint(p));
+            kPiece.Initialize(pieces[val], pointPos);
             killed.Add(kPiece);
         }
     }

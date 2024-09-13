@@ -13,6 +13,8 @@ public class KilledPiece : MonoBehaviour
     Vector2 moveDir;
     RectTransform rect;
     SpriteRenderer img;
+    AudioSource audio;
+    public AudioClip[] audioclips;
     // Start is called before the first frame update
     public void Initialize(Sprite piece, Vector2 start)
     {
@@ -23,8 +25,12 @@ public class KilledPiece : MonoBehaviour
 
         img = GetComponent<SpriteRenderer>();
         rect = GetComponent<RectTransform>();
+        audio= GetComponent<AudioSource>();
+        audio.clip = audioclips[Random.Range(0, audioclips.Length-1)];
         img.sprite = piece;
         rect.anchoredPosition = start;
+        audio.Play();
+        
 
     }
 
