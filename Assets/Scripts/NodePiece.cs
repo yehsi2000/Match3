@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class NodePiece : MonoBehaviour
@@ -11,6 +12,7 @@ public class NodePiece : MonoBehaviour
     public Vector2 pos;
     [SerializeField]
     public float moveSpeed = 16f;
+    static internal UnityEvent<Point,int> onSpecialBlockPress = new UnityEvent<Point, int>();
 
     bool updating;
     SpriteRenderer img;
@@ -80,6 +82,9 @@ public class NodePiece : MonoBehaviour
     void OnMouseUp()
     {
         Debug.Log("mouse up");
+        if (value > 100) {
+            onSpecialBlockPress.Invoke(index, value-100);
+        } else 
         MovePieces.instance.DropPiece();
     }
 }

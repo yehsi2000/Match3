@@ -49,6 +49,7 @@ public class Match3 : MonoBehaviour
     
 
     List<NodePiece> update;
+    List<Point> specialUpdate;
     List<FlippedPieces> flipped;
     List<NodePiece> dead;
     List<KilledPiece> killed;
@@ -65,6 +66,7 @@ public class Match3 : MonoBehaviour
 
     private void Awake() {
         KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
+        NodePiece.onSpecialBlockPress.AddListener(SpecialBlockPressed);
     }
 
     void Start()
@@ -92,6 +94,24 @@ public class Match3 : MonoBehaviour
         for(int i = 0; i < update.Count; i++){
             NodePiece piece = update[i];
             if (piece!=null && !piece.UpdatePiece()) finishedUpdating.Add(piece);
+        }
+
+        if (specialUpdate.Count > 0) {
+            for (int i=0; i<specialUpdate.Count; ++i) {
+                KillPiece(specialUpdate[i]);
+                Node node = getNodeAtPoint(specialUpdate[i]);
+                score += perPieceScore;
+                NodePiece nodePiece = node.GetPiece();
+                if (nodePiece != null) {
+                    Destroy(nodePiece.gameObject);
+                }
+                node.SetPiece(null);
+                
+            }
+            ApplyGravityToBoard(0,0);
+            audio.clip = audioclips[Random.Range(0, audioclips.Length - 1)];
+            audio.Play();
+            specialUpdate.Clear();
         }
         
         //bool doneRemoving = false;
@@ -136,15 +156,13 @@ public class Match3 : MonoBehaviour
                 }
                 int matchMax = 0;
                 for (int j= 0; j < 5;++j) {
-                    // val = j+1
-                    // 1=cube, 2=sphere, 3=cylinder, 4=pyramid, 5=diamond,
                     if (matchTypeCnt[j] == 4) {
                         score += match4ExtraScore;
                         matchMax = 1;
                     } else if (matchTypeCnt[j] == 5) {
                         score += match5ExtraScore;
                         matchMax = 2;
-                    } else if (matchTypeCnt[j] > 6) {
+                    } else if (matchTypeCnt[j] >= 6) {
                         score += match6plusExtraScore;
                         matchMax = 3;
                     }
@@ -203,7 +221,7 @@ public class Match3 : MonoBehaviour
 
                         //put new piece on top so it looks like falling down
                         if (!spawnedSpecial && x==specialX  && specialPieceVal > 0) {
-                            piece.Initialize(99, curPoint, specialPieces[specialPieceVal - 1], nodeSize);
+                            piece.Initialize(100 + specialPieceVal, curPoint, specialPieces[specialPieceVal - 1], nodeSize);
                             spawnedSpecial = true;
                         } else piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
                         piece.transform.position = GetPositionFromPoint(fallPoint); 
@@ -236,6 +254,7 @@ public class Match3 : MonoBehaviour
         string seed = GetRandomSeed();
         random = new System.Random(seed.GetHashCode());
         update = new List<NodePiece>();
+        specialUpdate = new List<Point>();
         flipped = new List<FlippedPieces>();
         dead = new List<NodePiece>();
         fills = new int[width];
@@ -327,7 +346,7 @@ public class Match3 : MonoBehaviour
 
         List<ParticleSystem> available = new List<ParticleSystem>();
         for(int i=0; i<particles.Count; i++) {
-            Debug.Log(particles[i].isStopped);
+            //Debug.Log(particles[i].isStopped);
             if (particles[i].isStopped) {
                 available.Add(particles[i]);
             }
@@ -343,7 +362,7 @@ public class Match3 : MonoBehaviour
             particles.Add(objParticle);
         }
 
-        Debug.Log(pointPos);
+        //Debug.Log(pointPos);
         particle.transform.position = pointPos;
         particle.Play();
         
@@ -351,11 +370,55 @@ public class Match3 : MonoBehaviour
         {
             kPiece.Initialize(pieces[val], pointPos);
             killed.Add(kPiece);
+        } else if(kPiece != null && val-100 < specialPieces.Length) {
+            kPiece.Initialize(specialPieces[val-100], pointPos);
+            SpecialBlockPressed(p,val-99);
+            killed.Add(kPiece);
         }
     }
 
     public void KilledPieceRemoved(KilledPiece killedPiece) {
         killed.Remove(killedPiece);
+    }
+
+    public void SpecialBlockPressed(Point pnt, int val) {
+        if (val == 1) {
+            for(int i=1; i<=2; i++) {
+                Point[] dir = { new Point(0, -1), new Point(0, 1), new Point(-1, 0), new Point(1, 0) };
+                foreach (Point p in dir) {
+                    Point toAdd = Point.add(pnt, Point.mult(p, i));
+                    if (toAdd.x >= 0 && toAdd.x < width && toAdd.y >= 0 && toAdd.y < height)
+                        specialUpdate.Add(toAdd);
+                }
+                
+            }
+            specialUpdate.Add(pnt);
+            
+        } else if(val == 2) {
+            Point[] dir = { 
+                new Point(0, -1),
+                new Point(1, -1),
+                new Point(1, 0),
+                new Point(1, 1),
+                new Point(0, 1),
+                new Point(-1, 1),
+                new Point(-1, 0),
+                new Point(-1, -1) 
+            };
+            foreach (Point p in dir) {
+                Point toAdd = Point.add(pnt, p);
+                if (toAdd.x >= 0 && toAdd.x < width && toAdd.y >= 0 && toAdd.y < height)
+                    specialUpdate.Add(toAdd);
+            }
+            specialUpdate.Add(pnt);
+        } else if(val==3){
+            for(int i=0; i<width; ++i) 
+                specialUpdate.Add(new Point(i,pnt.y));
+            for (int i = 0; i < height; ++i)
+                specialUpdate.Add(new Point(pnt.x, i));
+        } else {
+            Debug.Log("You fucked up");
+        }
     }
 
     public void FlipPieces(Point one, Point two, bool main){
@@ -380,6 +443,7 @@ public class Match3 : MonoBehaviour
     List<Point> isConnected(Point p, bool main){
         List<Point> connected = new List<Point>();
         int val = getValueAtPoint(p);
+        if (val > pieces.Length + 1) return connected;
         Point[] directions = {
             Point.up, 
             Point.right,
@@ -448,7 +512,7 @@ public class Match3 : MonoBehaviour
                 List<Point> more = isConnected(connected[i], false);
                 int additional_match = AddPoints(ref connected, more);
                 if (additional_match != 0) {
-                    Debug.LogFormat("add : {0} more : {1}",additional_match,more.Count);
+                    //Debug.LogFormat("add : {0} more : {1}",additional_match,more.Count);
                 }
             }
         }

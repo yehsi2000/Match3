@@ -31,7 +31,7 @@ public class MovePieces : MonoBehaviour
 
             newIndex = Point.clone(moving.index);
             Point add = Point.zero;
-            if (dir.magnitude > game.nodeSize/2f) {
+            if (dir.magnitude > game.nodeSize * 3f) {
                 // If our mouse is away from the starting point for certain amount,
                 // select move position based on most moved direction (by checking abs x,y val)
                 if (aDir.x > aDir.y)
