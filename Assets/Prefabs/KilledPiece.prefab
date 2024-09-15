@@ -99,4 +99,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   falling: 0
   speed: 2
-  gravity: 3
+  gravity: 30
