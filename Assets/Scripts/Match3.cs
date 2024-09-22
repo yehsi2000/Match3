@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using static UnityEngine.ParticleSystem;
@@ -44,7 +44,7 @@ public class Match3 : MonoBehaviour
     private static int width = 14;
     private static int height = 9;
     int[] fills;
-    //float clickableTime = 0f;
+    float clickableTime = 0f;
     public Node[,] board;
     
 
@@ -76,7 +76,6 @@ public class Match3 : MonoBehaviour
     }
 
     void Update(){
-        //audio played
         //update timer
         if (!timer.UpdateTimer()) {
             gameBoard.SetActive(false);
@@ -85,9 +84,9 @@ public class Match3 : MonoBehaviour
             finalScore.text = "Final Score : " + score;
             this.enabled = false;
         }
-        //block clicks while new blocks falling
-//         if (clickableTime <= 0) isClickable = true;
-//         else clickableTime -= Time.deltaTime;
+        //prevent clicking while special block popping
+         if (clickableTime <= 0) isClickable = true;
+         else clickableTime -= Time.deltaTime;
 
         //update moving pieces and store it for flip check
         List<NodePiece> finishedUpdating = new List<NodePiece>();
@@ -95,7 +94,7 @@ public class Match3 : MonoBehaviour
             NodePiece piece = update[i];
             if (piece!=null && !piece.UpdatePiece()) finishedUpdating.Add(piece);
         }
-
+        //Update for special block activation
         if (specialUpdate.Count > 0) {
             for (int i=0; i<specialUpdate.Count; ++i) {
                 KillPiece(specialUpdate[i]);
@@ -108,10 +107,13 @@ public class Match3 : MonoBehaviour
                 node.SetPiece(null);
                 
             }
-            ApplyGravityToBoard(0,0);
-            audio.clip = audioclips[Random.Range(0, audioclips.Length - 1)];
+            DropNewPiece();
+            isClickable = false;
+            clickableTime = clickStopInterval;
+            audio.clip = audioclips[UnityEngine.Random.Range(0, audioclips.Length - 1)];
             audio.Play();
             specialUpdate.Clear();
+            return;
         }
         
         //bool doneRemoving = false;
@@ -124,12 +126,12 @@ public class Match3 : MonoBehaviour
             int x = piece.index.x; //"x"th column
             fills[x] = Mathf.Clamp(fills[x]-1, 0, width);
 
-            List<Point> connected = isConnected(piece.index, true); //check if user controlled piece made a match
+            List<Point> connected = findConnected(piece.index, true); //check if user controlled piece made a match
             bool wasFlipped = (flip != null);
 
             if (wasFlipped) {
                 flippedPiece = flip.GetOtherPiece(piece);
-                AddPoints(ref connected, isConnected(flippedPiece.index, true));
+                AddPoints(ref connected, findConnected(flippedPiece.index, true));
             }
 
             if (connected.Count == 0){
@@ -139,12 +141,18 @@ public class Match3 : MonoBehaviour
             }
             else {
                 //made a match
-                int[] matchTypeCnt = new int[5];
+
+                //idx= piece value , item1 = piece cnt, item2 = sum of all piece x
+                ValueTuple<int,int>[] matchTypeCnt = new ValueTuple<int,int>[pieces.Length];
+                
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
-                    if(node.value>0 && node.value<5)
-                        matchTypeCnt[node.value-1]++;
+                    //if node is normal piece(not special, not hole, not blank)
+                    if (0 < node.value && node.value < pieces.Length) {
+                        matchTypeCnt[node.value-1].Item1++;
+                        matchTypeCnt[node.value-1].Item2 = pnt.x;
+                    }
                     score += perPieceScore;
                     NodePiece nodePiece = node.GetPiece();
                     if(nodePiece != null){
@@ -154,23 +162,25 @@ public class Match3 : MonoBehaviour
                     }
                     node.SetPiece(null);
                 }
-                int matchMax = 0;
-                for (int j= 0; j < 5;++j) {
-                    if (matchTypeCnt[j] == 4) {
+                List<ValueTuple<int,int>> matched5list = new List<ValueTuple<int,int>>();
+                for (int j=0; j<pieces.Length; ++j) {
+                    if (matchTypeCnt[j].Item1 == 4) {
                         score += match4ExtraScore;
-                        matchMax = 1;
-                    } else if (matchTypeCnt[j] == 5) {
+                    }
+                    if (matchTypeCnt[j].Item1 == 5) {
                         score += match5ExtraScore;
-                        matchMax = 2;
-                    } else if (matchTypeCnt[j] >= 6) {
+                        //send block's info which matched 5
+                        matched5list.Add(new ValueTuple<int,int>(j+1, matchTypeCnt[j].Item2));
+                    }
+                    if (matchTypeCnt[j].Item1 > 5) {
                         score += match6plusExtraScore;
-                        matchMax = 3;
+                        //send block's info which matched more than 5
+                        matched5list.Add(new ValueTuple<int, int>(0, matchTypeCnt[j].Item2));
                     }
                 }
-                //                 isClickable = false;
-                //                 clickableTime = clickStopInterval;
-                ApplyGravityToBoard(connected[0].x, matchMax);
-                audio.clip = audioclips[Random.Range(0, audioclips.Length - 1)];
+                
+                DropNewPiece(matched5list);
+                audio.clip = audioclips[UnityEngine.Random.Range(0, audioclips.Length - 1)];
                 audio.Play();
             }
             
@@ -183,8 +193,7 @@ public class Match3 : MonoBehaviour
         scoreBoard.UpdateScore(score);
     }
 
-    void ApplyGravityToBoard(int specialX, int specialPieceVal){
-        bool spawnedSpecial = false;
+    void DropNewPiece(List<ValueTuple<int, int>> specialBlockList = null){
         for (int x= 0; x<width; x++){
             for(int y = height-1; y>=0; y--){
                 //iterate from the top to bottom
@@ -218,13 +227,23 @@ public class Match3 : MonoBehaviour
                         //create new piece
                         GameObject obj = Instantiate(nodePiece, gameBoard.transform);
                         NodePiece piece = obj.GetComponent<NodePiece>();
+                        if (specialBlockList != null && specialBlockList.Count > 0) {
+                            for (int i = 0; i < specialBlockList.Count; ++i) {
+                                if (specialBlockList[i].Item2 == x) {
+                                    piece.Initialize(100 + specialBlockList[i].Item1, curPoint, specialPieces[specialBlockList[i].Item1], nodeSize);
+                                    specialBlockList.RemoveAt(i);
+                                    break;
+                                } else {
+                                    piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
+                                }
+                            }
 
+                        } else {
+                            piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
+                        }
+                        
                         //put new piece on top so it looks like falling down
-                        if (!spawnedSpecial && x==specialX  && specialPieceVal > 0) {
-                            piece.Initialize(100 + specialPieceVal, curPoint, specialPieces[specialPieceVal - 1], nodeSize);
-                            spawnedSpecial = true;
-                        } else piece.Initialize(newVal, curPoint, pieces[newVal - 1], nodeSize);
-                        piece.transform.position = GetPositionFromPoint(fallPoint); 
+                        piece.transform.position = getPositionFromPoint(fallPoint); 
 
                         Node hole = getNodeAtPoint(curPoint);
                         hole.SetPiece(piece);
@@ -251,7 +270,7 @@ public class Match3 : MonoBehaviour
     }
 
     public void StartGame(){
-        string seed = GetRandomSeed();
+        string seed = getRandomSeed();
         random = new System.Random(seed.GetHashCode());
         update = new List<NodePiece>();
         specialUpdate = new List<Point>();
@@ -283,7 +302,7 @@ public class Match3 : MonoBehaviour
         board = new Node[width, height];
         for(int y = 0; y<height; y++){
             for(int x=0; x<width; x++){
-                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? -1 : GetRandomPieceVal(), new Point(x,y));
+                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? 100 : GetRandomPieceVal(), new Point(x,y));
             }
         }
     }
@@ -296,7 +315,7 @@ public class Match3 : MonoBehaviour
                 int val = getValueAtPoint(p);
                 if(val<=0) continue;
                 remove = new List<int>();
-                while(isConnected(p, true).Count > 0 ){
+                while(findConnected(p, true).Count > 0 ){
                     val = getValueAtPoint(p);
                     if(!remove.Contains(val))
                         remove.Add(val);
@@ -317,7 +336,8 @@ public class Match3 : MonoBehaviour
                 NodePiece piece =p.GetComponent<NodePiece>();
                 //RectTransform rect = p.GetComponent<RectTransform>();
                 p.transform.position = new Vector3(nodeSize/2 + (nodeSize * (x-width/2f)), -nodeSize/2 - (nodeSize*(y-height/2f)));
-                piece.Initialize(val, new Point(x,y), pieces[val-1], nodeSize);
+                if(val>=100) piece.Initialize(val, new Point(x,y), specialPieces[val-100], nodeSize);
+                else piece.Initialize(val, new Point(x,y), pieces[val-1], nodeSize);
                 node.SetPiece(piece);
             }
         }
@@ -337,12 +357,12 @@ public class Match3 : MonoBehaviour
 
     void KillPiece(Point p)
     {
-        int val = getValueAtPoint(p) - 1;
-        if (val < 0) return;
+        int val = getValueAtPoint(p);
+        if (val <= 0) return;
         GameObject kill = GameObject.Instantiate(killedPiece, killedBoard.transform);
         KilledPiece kPiece = kill.GetComponent<KilledPiece>();
 
-        Vector2 pointPos = GetPositionFromPoint(p);
+        Vector2 pointPos = getPositionFromPoint(p);
 
         List<ParticleSystem> available = new List<ParticleSystem>();
         for(int i=0; i<particles.Count; i++) {
@@ -366,13 +386,13 @@ public class Match3 : MonoBehaviour
         particle.transform.position = pointPos;
         particle.Play();
         
-        if (kPiece != null && val < pieces.Length)
+        if (kPiece != null && val-1 < pieces.Length)
         {
-            kPiece.Initialize(pieces[val], pointPos);
+            kPiece.Initialize(pieces[val-1], pointPos);
             killed.Add(kPiece);
         } else if(kPiece != null && val-100 < specialPieces.Length) {
             kPiece.Initialize(specialPieces[val-100], pointPos);
-            SpecialBlockPressed(p,val-99);
+            SpecialBlockPressed(p,val-100);
             killed.Add(kPiece);
         }
     }
@@ -382,42 +402,65 @@ public class Match3 : MonoBehaviour
     }
 
     public void SpecialBlockPressed(Point pnt, int val) {
-        if (val == 1) {
-            for(int i=1; i<=2; i++) {
-                Point[] dir = { new Point(0, -1), new Point(0, 1), new Point(-1, 0), new Point(1, 0) };
+        Debug.LogErrorFormat("Special val {0}", val);
+        if (val == 0) {
+            //싞틀이
+            //화면 모든 블럭 제거
+            for (int i = 0; i < width; ++i) 
+                for (int j = 0; j < height; ++j) 
+                    specialUpdate.Add(new Point(i, j));
+            } else if (val == 1) {
+            //다비
+            //대각선 모두 제거
+            specialUpdate.Add(pnt);
+            for (int i = 1; i <= Math.Max(height,width); i++) {
+                Point[] dir = { new Point(1, -1), new Point(1, 1), new Point(-1, 1), new Point(-1, -1) };
                 foreach (Point p in dir) {
                     Point toAdd = Point.add(pnt, Point.mult(p, i));
-                    if (toAdd.x >= 0 && toAdd.x < width && toAdd.y >= 0 && toAdd.y < height)
+                    if (toAdd.x >= 0 && toAdd.x < width && toAdd.y >= 0 && toAdd.y < height) {
                         specialUpdate.Add(toAdd);
+                    }
                 }
-                
             }
-            specialUpdate.Add(pnt);
-            
-        } else if(val == 2) {
-            Point[] dir = { 
-                new Point(0, -1),
-                new Point(1, -1),
-                new Point(1, 0),
-                new Point(1, 1),
-                new Point(0, 1),
-                new Point(-1, 1),
-                new Point(-1, 0),
-                new Point(-1, -1) 
-            };
-            foreach (Point p in dir) {
-                Point toAdd = Point.add(pnt, p);
-                if (toAdd.x >= 0 && toAdd.x < width && toAdd.y >= 0 && toAdd.y < height)
-                    specialUpdate.Add(toAdd);
-            }
-            specialUpdate.Add(pnt);
-        } else if(val==3){
-            for(int i=0; i<width; ++i) 
-                specialUpdate.Add(new Point(i,pnt.y));
-            for (int i = 0; i < height; ++i)
+        } else if (val == 2) {
+            //리자
+            //가로세로 모두 제거
+            for (int i = 0; i < width; ++i)
+                specialUpdate.Add(new Point(i, pnt.y));
+            for (int i = 0; i < height; ++i) {
+                if (i == pnt.y) continue; //prevent dual update for pressed
                 specialUpdate.Add(new Point(pnt.x, i));
-        } else {
-            Debug.Log("You fucked up");
+            }
+        } else if (val == 3) {
+            //모나
+            //인접 5x5 블럭 파괴
+            for (int i = -2; i <= 2; ++i) {
+                for (int j = -2; j <= 2; ++j) {
+                    Point toAdd = Point.add(pnt, new Point(i, j));
+                    if (toAdd.x >= 0 && toAdd.x < width && toAdd.y >= 0 && toAdd.y < height) {
+                        specialUpdate.Add(toAdd);
+                    }
+                }
+            }
+        } else if (val == 4) {
+            //우산
+            //랜덤 블럭제거
+            specialUpdate.Add(pnt);
+            while(specialUpdate.Count < 10) {
+                int randomX = random.Next(0, width);
+                int randomY = random.Next(0, height);
+                specialUpdate.Add(new Point(randomX, randomY));
+            }
+        } else if (val == 5) {
+            //우콩
+            //모든 상아제거
+            for (int i = 0; i < width; ++i) {
+                for (int j = 0; j < height; ++j) {
+                    if (getNodeAtPoint(new Point(i, j)).GetPiece().value == 5) {
+                        specialUpdate.Add(new Point(i, j));
+                    }
+                }
+            }
         }
     }
 
@@ -440,15 +483,15 @@ public class Match3 : MonoBehaviour
             ResetPiece(pieceOne); //second one's hole, reset first one's position
     }
 
-    List<Point> isConnected(Point p, bool main){
+    List<Point> findConnected(Point p, bool main){
         List<Point> connected = new List<Point>();
         int val = getValueAtPoint(p);
         if (val > pieces.Length + 1) return connected;
         Point[] directions = {
             Point.up, 
-            Point.right,
-            Point.down,
-            Point.left
+            Point.right, 
+            Point.down, 
+            Point.left 
         };
 
         foreach(Point dir in directions) {
@@ -509,7 +552,7 @@ public class Match3 : MonoBehaviour
 
         if (main){ //checks for other matches along the current match
             for(int i = 0; i<connected.Count; i++){
-                List<Point> more = isConnected(connected[i], false);
+                List<Point> more = findConnected(connected[i], false);
                 int additional_match = AddPoints(ref connected, more);
                 if (additional_match != 0) {
                     //Debug.LogFormat("add : {0} more : {1}",additional_match,more.Count);
@@ -564,15 +607,15 @@ public class Match3 : MonoBehaviour
         
     }
 
-    string GetRandomSeed(){
+    string getRandomSeed(){
         string seed = "";
         string acceptableChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!@#$%^&*()";
         for(int i=0; i<20; i++)
-            seed += acceptableChars[Random.Range(0, acceptableChars.Length)];
+            seed += acceptableChars[UnityEngine.Random.Range(0, acceptableChars.Length)];
         return seed;
     }
 
-    public Vector2 GetPositionFromPoint(Point p){
+    public Vector2 getPositionFromPoint(Point p){
         return new Vector3(nodeSize/2 + (nodeSize * (p.x-width/2f)), -nodeSize/2 - (nodeSize * (p.y-height/2f)));
     }
 }

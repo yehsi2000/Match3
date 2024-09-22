@@ -31,8 +31,6 @@ public class KilledPiece : MonoBehaviour
 
     }
 
-
-
     void Update()
     {
         if (!falling) return;

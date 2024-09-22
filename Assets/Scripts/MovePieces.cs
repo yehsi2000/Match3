@@ -42,7 +42,7 @@ public class MovePieces : MonoBehaviour
             newIndex.add(add); //new index for flicked piece
             //bool isOpponentMoving = game.board[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
            
-            Vector2 pos = game.GetPositionFromPoint(moving.index);
+            Vector2 pos = game.getPositionFromPoint(moving.index);
             if (!newIndex.Equals(moving.index))
                 pos += new Point(add.x, -add.y).ToVector() * game.nodeSize / 4f;
             moving.MovePositionTo(pos);

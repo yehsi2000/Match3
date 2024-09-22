@@ -81,8 +81,7 @@ public class NodePiece : MonoBehaviour
 
     void OnMouseUp()
     {
-        Debug.Log("mouse up");
-        if (value > 100) {
+        if (value >= 100) {
             onSpecialBlockPress.Invoke(index, value-100);
         } else 
         MovePieces.instance.DropPiece();

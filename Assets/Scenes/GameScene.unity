@@ -736,12 +736,15 @@ MonoBehaviour:
   - {fileID: 21300000, guid: a77af8aab64a1f049be9360b4d3f2419, type: 3}
   - {fileID: 21300000, guid: 31bafab42a2d2ce4bb3f3f28de4b3d03, type: 3}
   - {fileID: 21300000, guid: 894289d5c1c1ca34290adccdca007418, type: 3}
-  - {fileID: 21300000, guid: 1a234f2f27181564695b0b75cf66348c, type: 3}
   - {fileID: 21300000, guid: 91a5a14b496e1a241927fc89cb0dfe99, type: 3}
+  - {fileID: 21300000, guid: efb17b600882fcb47a177f6aaadfd9b4, type: 3}
   specialPieces:
   - {fileID: 21300000, guid: fe1745b500f2f574aa098907f723ca12, type: 3}
+  - {fileID: 21300000, guid: fe3578853888fc04285f35cfaa0d2879, type: 3}
+  - {fileID: 21300000, guid: 176d98bde79614345be8ea97a14a2100, type: 3}
   - {fileID: 21300000, guid: 82d520879ae007c4b9830f4155c23353, type: 3}
-  - {fileID: 21300000, guid: 8d2ffc97bebc5a647b1c867dadb419bc, type: 3}
+  - {fileID: 21300000, guid: 4936beed407b82945b82c6b7e93c29bf, type: 3}
+  - {fileID: 21300000, guid: 61ba4a8df13e09b4c861f6a8bff46d4a, type: 3}
   gameBoard: {fileID: 759404410}
   killedBoard: {fileID: 1302741729}
   gameEndScreen: {fileID: 906328925}
