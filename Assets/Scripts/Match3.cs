@@ -142,14 +142,14 @@ public class Match3 : MonoBehaviour
             else {
                 //made a match
 
-                //idx= piece value , item1 = piece cnt, item2 = sum of all piece x
+                //idx= piece value , item1 = piece cnt, item2 = xpos of last updated piece
                 ValueTuple<int,int>[] matchTypeCnt = new ValueTuple<int,int>[pieces.Length];
                 
                 foreach (Point pnt in connected) {  //remove the node pieces connected
                     KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
                     //if node is normal piece(not special, not hole, not blank)
-                    if (0 < node.value && node.value < pieces.Length) {
+                    if (0 < node.value && node.value <= pieces.Length) {
                         matchTypeCnt[node.value-1].Item1++;
                         matchTypeCnt[node.value-1].Item2 = pnt.x;
                     }
@@ -302,7 +302,7 @@ public class Match3 : MonoBehaviour
         board = new Node[width, height];
         for(int y = 0; y<height; y++){
             for(int x=0; x<width; x++){
-                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? 100 : GetRandomPieceVal(), new Point(x,y));
+                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? 5 : GetRandomPieceVal(), new Point(x,y));
             }
         }
     }
@@ -454,10 +454,15 @@ public class Match3 : MonoBehaviour
         } else if (val == 5) {
             //우콩
             //모든 상아제거
+            specialUpdate.Add(pnt);
             for (int i = 0; i < width; ++i) {
                 for (int j = 0; j < height; ++j) {
-                    if (getNodeAtPoint(new Point(i, j)).GetPiece().value == 5) {
-                        specialUpdate.Add(new Point(i, j));
+                    Node node = getNodeAtPoint(new Point(i, j));
+                    if (node != null) {
+                        NodePiece piece = node.GetPiece();
+                        if (piece != null && piece.value == 5) {
+                            specialUpdate.Add(new Point(i, j));
+                        }
                     }
                 }
             }
