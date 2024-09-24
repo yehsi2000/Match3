@@ -20,6 +20,7 @@ public class Match3 : MonoBehaviour
     public ScoreBoard scoreBoard;
     public TMP_Text finalScore;
     public Timer timer;
+    public ComboDisplay comboDisplay;
 
     [Header("Prefabs")]
     public GameObject nodePiece;
@@ -36,15 +37,23 @@ public class Match3 : MonoBehaviour
     public float nodeSize = 0.8f;
     [Header("Time")]
     public float clickStopInterval = 0.5f;
+    public float comboRetainInterval = 1.5f;
     [Header("Audio")]
-    AudioSource audio;
-    public AudioClip[] audioclips;
+    AudioSource blockPopAudio;
+    public AudioClip[] blockPopAudioClips;
+    public AudioSource bgm;
+    public AudioClip[] bgmAudioClips;
+    public AudioSource comboAudio;
+    public AudioClip[] comboAudioClips;
 
 
     private static int width = 14;
     private static int height = 9;
     int[] fills;
     float clickableTime = 0f;
+    float comboTime = 0f;
+    [HideInInspector]
+    public int combo = 0;
     public Node[,] board;
     
 
@@ -81,12 +90,16 @@ public class Match3 : MonoBehaviour
             gameBoard.SetActive(false);
             killedBoard.SetActive(false);
             gameEndScreen.SetActive(true);
+            bgm.Stop();
             finalScore.text = "Final Score : " + score;
             this.enabled = false;
         }
         //prevent clicking while special block popping
          if (clickableTime <= 0) isClickable = true;
          else clickableTime -= Time.deltaTime;
+         if (comboTime <= 0) combo = 0;
+         else comboTime -= Time.deltaTime;
+
 
         //update moving pieces and store it for flip check
         List<NodePiece> finishedUpdating = new List<NodePiece>();
@@ -110,8 +123,9 @@ public class Match3 : MonoBehaviour
             DropNewPiece();
             isClickable = false;
             clickableTime = clickStopInterval;
-            audio.clip = audioclips[UnityEngine.Random.Range(0, audioclips.Length - 1)];
-            audio.Play();
+            blockPopAudio.clip = blockPopAudioClips[UnityEngine.Random.Range(0, blockPopAudioClips.Length - 1)];
+            AddCombo();
+            blockPopAudio.Play();
             specialUpdate.Clear();
             return;
         }
@@ -174,14 +188,16 @@ public class Match3 : MonoBehaviour
                     }
                     if (matchTypeCnt[j].Item1 > 5) {
                         score += match6plusExtraScore;
-                        //send block's info which matched more than 5
+                        //send block's info 5or more matched block is in  line
                         matched5list.Add(new ValueTuple<int, int>(0, matchTypeCnt[j].Item2));
                     }
                 }
+                AddCombo();
                 
                 DropNewPiece(matched5list);
-                audio.clip = audioclips[UnityEngine.Random.Range(0, audioclips.Length - 1)];
-                audio.Play();
+                
+                blockPopAudio.clip = blockPopAudioClips[UnityEngine.Random.Range(0, blockPopAudioClips.Length - 1)];
+                blockPopAudio.Play();
             }
             
             flipped.Remove(flip); //remove the flip after update
@@ -191,6 +207,18 @@ public class Match3 : MonoBehaviour
         //if (killed.Count == 0) doneRemoving = true;
         //if (doneRemoving) ApplyGravityToBoard();
         scoreBoard.UpdateScore(score);
+    }
+
+    void AddCombo() {
+        combo++;
+        score += (combo/5) * perPieceScore;
+        comboTime = comboRetainInterval;
+        comboDisplay.UpdateCombo(combo);
+        if (combo % 5 == 0 && combo > 0) {
+            int combosfxindex = Math.Clamp((combo/5)-1, 0, comboAudioClips.Length - 1);
+            comboAudio.clip = comboAudioClips[combosfxindex];
+            comboAudio.Play();
+        }
     }
 
     void DropNewPiece(List<ValueTuple<int, int>> specialBlockList = null){
@@ -279,9 +307,12 @@ public class Match3 : MonoBehaviour
         fills = new int[width];
         killed = new List<KilledPiece>();
         particles = new List<ParticleSystem>();
+        comboDisplay.Initialize(comboRetainInterval);
         //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
-        audio = GetComponent<AudioSource>();
+        blockPopAudio = GetComponent<AudioSource>();
+        bgm.clip = bgmAudioClips[PlayerPrefs.GetInt("bgm") % bgmAudioClips.Length];
+        bgm.Play();
         // set sprite image background to camera size, currently not used
         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
         float _width = bgSpriteRenderer.bounds.size.x;

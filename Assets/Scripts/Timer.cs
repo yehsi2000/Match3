@@ -10,7 +10,6 @@ public class Timer : MonoBehaviour
     TMP_Text timerText;
     float timerTime;
     public float TIMELEFT = 120f;
-    public GameObject Match3Controller;
 
     private void Start() {
         timerText = GetComponent<TMP_Text>();
