@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using KaimiraGames;
 using static UnityEngine.ParticleSystem;
 
 public class Match3 : MonoBehaviour
@@ -30,6 +31,7 @@ public class Match3 : MonoBehaviour
 
     [Header("Score")]
     public int score;
+    public int autoBlockWeightMultiplier = 5;
     public int perPieceScore = 5;
     public int match4ExtraScore = 20;
     public int match5ExtraScore = 50;
@@ -170,14 +172,15 @@ public class Match3 : MonoBehaviour
                 ValueTuple<int,int>[] matchTypeCnt = new ValueTuple<int,int>[pieces.Length];
                 
                 foreach (Point pnt in connected) {  //remove the node pieces connected
-                    KillPiece(pnt);
                     Node node = getNodeAtPoint(pnt);
                     //if node is normal piece(not special, not hole, not blank)
                     if (0 < node.value && node.value <= pieces.Length) {
                         matchTypeCnt[node.value-1].Item1++;
                         matchTypeCnt[node.value-1].Item2 = pnt.x;
+                        Debug.LogFormat("{0},{1} = value:{2}",pnt.x,pnt.y,node.value);
                     }
                     score += perPieceScore;
+                    KillPiece(pnt);
                     NodePiece nodePiece = node.GetPiece();
                     if(nodePiece != null){
                         //nodePiece.gameObject.SetActive(false);
@@ -198,8 +201,9 @@ public class Match3 : MonoBehaviour
                     }
                     if (matchTypeCnt[j].Item1 > 5) {
                         score += match6plusExtraScore;
+                        Debug.LogWarningFormat("value6 :{0}", j+1);
                         //send block's info 5or more matched block is in  line
-                        matched5list.Add(new ValueTuple<int, int>(0, matchTypeCnt[j].Item2));
+                        //matched5list.Add(new ValueTuple<int, int>(0, matchTypeCnt[j].Item2));
                     }
                 }
                 AddCombo();
@@ -218,7 +222,9 @@ public class Match3 : MonoBehaviour
         //if (doneRemoving) ApplyGravityToBoard();
         scoreBoard.UpdateScore(score);
     }
-
+    /// <summary>
+    /// Increment Combo and adds combo bonus score. Also resets combo retain timer
+    /// </summary>
     void AddCombo() {
         combo++;
         score += Math.Clamp((combo/5),0,6) * perPieceScore;
@@ -230,7 +236,10 @@ public class Match3 : MonoBehaviour
             comboAudio.Play();
         }
     }
-
+    /// <summary>
+    /// Drop NodePiece if there are hollows below. Generate empty block on top if needed.
+    /// </summary>
+    /// <param name="specialBlockList">List of infos of special block to generate. Tuple(speical generate xval, specialblock type)</param>
     void DropNewPiece(List<ValueTuple<int, int>> specialBlockList = null){
         for (int x= 0; x<width; x++){
             for(int y = height-1; y>=0; y--){
@@ -257,8 +266,27 @@ public class Match3 : MonoBehaviour
                         got.SetPiece(null); //Replace the upper piece to blank
                     } else {
                         //if above is top wall or hole create new piece and drop it from the top
-                        int newVal = GetRandomPieceVal();
                         
+                        int newVal = GetRandomPieceVal();
+                        int[] nearRow = { -2, -1, 1, 2};
+                        List<int> nearValues = new List<int>();
+                        Debug.LogWarningFormat("Start {0}:{1}", x, y);
+                        foreach (int diff in nearRow) {
+                            if (x + diff >= width || x+diff < 0 || y + fills[x]<0 || y + fills[x] >= height) continue;
+                                NodePiece np = board[x + diff, y].GetPiece();
+                            if (np != null) {
+                                nearValues.Add(np.value);
+                                Debug.LogFormat("{0}:{1} - val:{2}", np.index.x,np.index.y,np.value);
+                            }
+                        }
+                        for(int i=0; i<nearValues.Count-1; ++i) {
+                            if (nearValues[i] == nearValues[i + 1]) {
+                                Debug.LogFormat("Before : {0}, Wanted : {1}", newVal, nearValues[i]);
+                                if(newVal<100) newVal = GetWeightedRandomPieceVal(nearValues[i]);
+                                Debug.LogFormat("After : {0}", newVal);
+                                break;
+                            }
+                        }
                         //y=-1 is above top line, fills[x] = offset up, as we are dropping more than 1 piece
                         Point fallPoint = new Point(x, -1 - fills[x]);
                         
@@ -296,6 +324,11 @@ public class Match3 : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Get flipped piece of current selected NodePiece
+    /// </summary>
+    /// <param name="p">selected piece</param>
+    /// <returns></returns>
     FlippedPieces GetFlipped(NodePiece p){
         FlippedPieces flip = null;
         for(int i=0; i<flipped.Count; i++){
@@ -307,6 +340,9 @@ public class Match3 : MonoBehaviour
         return flip;
     }
 
+    /// <summary>
+    /// Initialize game variable and set components
+    /// </summary>
     public void StartGame(){
         string seed = getRandomSeed();
         random = new System.Random(seed.GetHashCode());
@@ -337,7 +373,10 @@ public class Match3 : MonoBehaviour
         score = 0;
         timer.StartTimer();
     }
-
+    /// <summary>
+    /// Fill Board with random value, doesn't check if there are match.
+    /// Should call VerifyBoard after to check if it's in valid form
+    /// </summary>
     void InitializeBoard(){
         board = new Node[width, height];
         for(int y = 0; y<height; y++){
@@ -347,6 +386,9 @@ public class Match3 : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Check if there's any connected block in current board. If there is, remove it and regenerated block in place
+    /// </summary>
     void VerifyBoard(){
         List<int> remove;
         for(int x=0; x<width; x++){
@@ -365,6 +407,9 @@ public class Match3 : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Generate and place instances of nodepiece prefabs in node-size-aligned position
+    /// </summary>
     void InstantiateBoard() {
         for (int x = 0; x < width; x++){
             for (int y = 0; y < height; y++){
@@ -383,18 +428,52 @@ public class Match3 : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// get random normal piece value
+    /// </summary>
+    /// <returns>random normal piece (starting with 1)</returns>
     int GetRandomPieceVal()
     {
-        int val = 1;
-        val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;
-        return val;
+        WeightedList<int> myWL = new WeightedList<int>();
+        for(int i=0; i < pieces.Length; ++i) {
+            myWL.Add(i + 1, 10);
+        }
+        //int val = 1;
+        //val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;
+        return myWL.Next();
     }
 
+    /// <summary>
+    /// Get weighted random value of selected value
+    /// </summary>
+    /// <param name="val">values wishes to be generated more often</param>
+    /// <returns>weighted random normal piece type(starting with 1)</returns>
+    int GetWeightedRandomPieceVal(int val) {
+        WeightedList<int> myWL = new WeightedList<int>();
+        for (int i = 1; i <= pieces.Length; ++i) {
+            if (i == val) continue;
+            myWL.Add(i, 1);
+        }
+        myWL.Add(val, autoBlockWeightMultiplier);
+        //int val = 1;
+        //val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;
+        return myWL.Next();
+    }
+
+    /// <summary>
+    /// Push piece in update list to place it in index-position.
+    /// Used to initiate NodePiece or revert flip 
+    /// </summary>
+    /// <param name="piece">node to reset position</param>
     public void ResetPiece(NodePiece piece){
         piece.ResetPosition();
         update.Add(piece);
     }
 
+    /// <summary>
+    /// Doesn't really kill piece. Instantiates killpiece prefabs in killboard and make explosion effect on popped pieces
+    /// </summary>
+    /// <param name="p">Piece which is killed and to be dropped</param>
     void KillPiece(Point p)
     {
         int val = getValueAtPoint(p);
@@ -437,12 +516,20 @@ public class Match3 : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Reacts to killpiece prefab unrendered on screen and remove it from killedlist
+    /// </summary>
+    /// <param name="killedPiece"></param>
     public void KilledPieceRemoved(KilledPiece killedPiece) {
         killed.Remove(killedPiece);
     }
 
+    /// <summary>
+    /// Reacts to special blocks pressed and execute it's implementation
+    /// </summary>
+    /// <param name="pnt">Special block position index</param>
+    /// <param name="val">Special block type 0 ~ </param>
     public void SpecialBlockPressed(Point pnt, int val) {
-        Debug.LogErrorFormat("Special val {0}", val);
         if (val == 0) {
             //싞틀이
             //화면 모든 블럭 제거
@@ -508,7 +595,12 @@ public class Match3 : MonoBehaviour
             }
         }
     }
-
+    /// <summary>
+    /// Flip two piece
+    /// </summary>
+    /// <param name="one">piece to be flipped</param>
+    /// <param name="two">piece to be flipped</param>
+    /// <param name="main">is this called in user action not revert flip?</param>
     public void FlipPieces(Point one, Point two, bool main){
         if(getValueAtPoint(one) < 0) return; //if first one's hole do nothing
         Node nodeOne = getNodeAtPoint(one);
@@ -528,6 +620,12 @@ public class Match3 : MonoBehaviour
             ResetPiece(pieceOne); //second one's hole, reset first one's position
     }
 
+    /// <summary>
+    /// Find and return all blocks connected with current block.
+    /// </summary>
+    /// <param name="p">Initial block position</param>
+    /// <param name="main">is this called in Update() function, not recursively in itself?</param>
+    /// <returns></returns>
     List<Point> findConnected(Point p, bool main){
         List<Point> connected = new List<Point>();
         int val = getValueAtPoint(p);
@@ -609,6 +707,12 @@ public class Match3 : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Helper function to concat two List of points
+    /// </summary>
+    /// <param name="points">Base list to be concatenated</param>
+    /// <param name="add">List to be added in the first List</param>
+    /// <returns></returns>
     int AddPoints(ref List<Point>points, List<Point> add){
         int added = 0;
         foreach(Point p in add){
@@ -640,6 +744,11 @@ public class Match3 : MonoBehaviour
         return board[p.x, p.y];
     }
 
+    /// <summary>
+    /// Get Piece type value except ones in remove List
+    /// </summary>
+    /// <param name="remove">piece type values not wanted to be generated</param>
+    /// <returns>new piece type value which is not in remove List</returns>
     int newValue(ref List<int> remove){
         List<int> available = new List<int>();
         for(int i=0; i<pieces.Length; i++){
