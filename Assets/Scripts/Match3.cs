@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using static UnityEngine.ParticleSystem;
 
 public class Match3 : MonoBehaviour
@@ -76,6 +77,15 @@ public class Match3 : MonoBehaviour
     private void Awake() {
         KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
         NodePiece.onSpecialBlockPress.AddListener(SpecialBlockPressed);
+    }
+
+    public void BacktoTitle() {
+        SceneManager.LoadScene("StartScene");
+    }
+
+    public void Reset() {
+        StartGame();
+        gameEndScreen.SetActive(false);
     }
 
     void Start()
@@ -211,7 +221,7 @@ public class Match3 : MonoBehaviour
 
     void AddCombo() {
         combo++;
-        score += (combo/5) * perPieceScore;
+        score += Math.Clamp((combo/5),0,6) * perPieceScore;
         comboTime = comboRetainInterval;
         comboDisplay.UpdateCombo(combo);
         if (combo % 5 == 0 && combo > 0) {
@@ -321,7 +331,6 @@ public class Match3 : MonoBehaviour
         //float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
         //bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width*nodeSize*width/1024, worldScreenHeight/_height*nodeSize*height/640,1);
         bgImageObject.transform.localScale = new Vector3(nodeSize*(width+1) / _width, nodeSize*(height+1)/_height,1);
-        
         InitializeBoard();
         VerifyBoard();
         InstantiateBoard();

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ComboDisplay : MonoBehaviour
@@ -17,7 +18,7 @@ public class ComboDisplay : MonoBehaviour
     public void Initialize(float combotime) {
         //comboText = GetComponent<TMP_Text>();
         comboText.enabled = false;
-        comboDisplayTime = combotime;
+        comboDisplayTime = combotime/2;
 
     }
 
@@ -25,6 +26,7 @@ public class ComboDisplay : MonoBehaviour
     public void UpdateCombo(int combo)
     {
         comboText.enabled = true;
+        comboText.alpha = 1f;
         comboText.text = combo + " Combo!";
         displayTime = comboDisplayTime;
     }
@@ -32,7 +34,8 @@ public class ComboDisplay : MonoBehaviour
     private void Update() {
         displayTime -= Time.deltaTime;
         if (displayTime < 0f) {
-            comboText.enabled = false;
+            comboText.alpha -= Mathf.Lerp(0, 1, Time.deltaTime/comboDisplayTime);
         }
+        
     }
 }
