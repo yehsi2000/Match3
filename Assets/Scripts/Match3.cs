@@ -194,14 +194,15 @@ public class Match3 : MonoBehaviour
                     if (matchTypeCnt[j].Item1 == 4) {
                         score += match4ExtraScore;
                     }
-                    if (matchTypeCnt[j].Item1 == 5) {
+                    else if (matchTypeCnt[j].Item1 == 5) {
                         score += match5ExtraScore;
                         //send block's info which matched 5
                         matched5list.Add(new ValueTuple<int,int>(j+1, matchTypeCnt[j].Item2));
                     }
-                    if (matchTypeCnt[j].Item1 > 5) {
+                    else if (matchTypeCnt[j].Item1 > 5) {
                         score += match6plusExtraScore;
-                        Debug.LogWarningFormat("value6 :{0}", j+1);
+                        //Debug.LogWarningFormat("value6 :{0}", j+1);
+                        matched5list.Add(new ValueTuple<int,int>(j+1, matchTypeCnt[j].Item2));
                         //send block's info 5or more matched block is in  line
                         //matched5list.Add(new ValueTuple<int, int>(0, matchTypeCnt[j].Item2));
                     }
