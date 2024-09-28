@@ -1025,6 +1025,7 @@ MonoBehaviour:
   killedPiece: {fileID: 3808634555857249372, guid: d71b84b7cf5668f499d7b372a059f046, type: 3}
   popParticle: {fileID: 2903003964780308935, guid: 7c3c0b889305f5d41868b864c234c261, type: 3}
   score: 0
+  autoBlockWeightMultiplier: 3
   perPieceScore: 5
   match4ExtraScore: 20
   match5ExtraScore: 45
@@ -1046,7 +1047,10 @@ MonoBehaviour:
   - {fileID: 8300000, guid: b626e26fcd30eae43a09305f29dfe4d5, type: 3}
   - {fileID: 8300000, guid: 105c1d839348a2445990c903057277a2, type: 3}
   - {fileID: 8300000, guid: 9ae674a3b8751544a9747a1460220fe0, type: 3}
-  - {fileID: 8300000, guid: ff2aeaeac1f22b44385f4aa5bc2add2d, type: 3}
+  - {fileID: 8300000, guid: d1ae877bde5edbb40b5dc140e979fff2, type: 3}
+  - {fileID: 8300000, guid: b726615d834a90b48bb5a7dc33d6ee93, type: 3}
+  - {fileID: 8300000, guid: 73619a1f90399ac469624b728e9ee0b9, type: 3}
+  - {fileID: 8300000, guid: 0840158cfdc2bed4ca11443715ab4ac9, type: 3}
   combo: 0
 --- !u!4 &951057382
 Transform:

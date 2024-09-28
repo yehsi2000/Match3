@@ -224,7 +224,7 @@ public class Match3 : MonoBehaviour
         scoreBoard.UpdateScore(score);
     }
     /// <summary>
-    /// Increment Combo and adds combo bonus score. Also resets combo retain timer
+    /// Increment Combo and perform additional jobs related to combo, ex)sfx, score, combotimer
     /// </summary>
     void AddCombo() {
         combo++;
