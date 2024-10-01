@@ -2,14 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using JetBrains.Annotations;
-
 
 public class Timer : MonoBehaviour
 {
     TMP_Text timerText;
     float timerTime;
     public float TIMELEFT = 120f;
+    public static Timer instance;
+
+    private void Awake() {
+        instance = this;
+    }
 
     private void Start() {
         timerText = GetComponent<TMP_Text>();

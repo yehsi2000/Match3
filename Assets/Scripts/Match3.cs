@@ -19,9 +19,7 @@ public class Match3 : MonoBehaviour
     public GameObject killedBoard;
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
-    public ScoreBoard scoreBoard;
     public TMP_Text finalScore;
-    public Timer timer;
     public ComboDisplay comboDisplay;
 
     [Header("Prefabs")]
@@ -99,7 +97,7 @@ public class Match3 : MonoBehaviour
 
     void Update(){
         //update timer
-        if (!timer.UpdateTimer()) {
+        if (!Timer.instance.UpdateTimer()) {
             gameBoard.SetActive(false);
             killedBoard.SetActive(false);
             gameEndScreen.SetActive(true);
@@ -220,7 +218,7 @@ public class Match3 : MonoBehaviour
         }
         //if (killed.Count == 0) doneRemoving = true;
         //if (doneRemoving) ApplyGravityToBoard();
-        scoreBoard.UpdateScore(score);
+        ScoreBoard.instance.UpdateScore(score);
     }
     /// <summary>
     /// Increment Combo and perform additional jobs related to combo, ex)sfx, score, combotimer
@@ -369,7 +367,7 @@ public class Match3 : MonoBehaviour
         VerifyBoard();
         InstantiateBoard();
         score = 0;
-        timer.StartTimer();
+        Timer.instance.StartTimer();
     }
     /// <summary>
     /// Fill Board with random value, doesn't check if there are match.
