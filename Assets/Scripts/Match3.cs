@@ -178,7 +178,6 @@ public class Match3 : MonoBehaviour
                     if (0 < node.value && node.value <= pieces.Length) {
                         matchTypeCnt[node.value-1].Item1++;
                         matchTypeCnt[node.value-1].Item2 = pnt.x;
-                        Debug.LogFormat("{0},{1} = value:{2}",pnt.x,pnt.y,node.value);
                     }
                     score += perPieceScore;
                     KillPiece(pnt);
@@ -202,7 +201,6 @@ public class Match3 : MonoBehaviour
                     }
                     else if (matchTypeCnt[j].Item1 > 5) {
                         score += match6plusExtraScore;
-                        //Debug.LogWarningFormat("value6 :{0}", j+1);
                         matched5list.Add(new ValueTuple<int,int>(j+1, matchTypeCnt[j].Item2));
                         //send block's info 5or more matched block is in  line
                         //matched5list.Add(new ValueTuple<int, int>(0, matchTypeCnt[j].Item2));
@@ -272,20 +270,16 @@ public class Match3 : MonoBehaviour
                         int newVal = GetRandomPieceVal();
                         int[] nearRow = { -2, -1, 1, 2};
                         List<int> nearValues = new List<int>();
-                        Debug.LogWarningFormat("Start {0}:{1}", x, y);
                         foreach (int diff in nearRow) {
                             if (x + diff >= width || x+diff < 0 || y + fills[x]<0 || y + fills[x] >= height) continue;
                                 NodePiece np = board[x + diff, y].GetPiece();
                             if (np != null) {
                                 nearValues.Add(np.value);
-                                Debug.LogFormat("{0}:{1} - val:{2}", np.index.x,np.index.y,np.value);
                             }
                         }
                         for(int i=0; i<nearValues.Count-1; ++i) {
                             if (nearValues[i] == nearValues[i + 1]) {
-                                Debug.LogFormat("Before : {0}, Wanted : {1}", newVal, nearValues[i]);
                                 if(newVal<100) newVal = GetWeightedRandomPieceVal(nearValues[i]);
-                                Debug.LogFormat("After : {0}", newVal);
                                 break;
                             }
                         }
@@ -481,7 +475,6 @@ public class Match3 : MonoBehaviour
 
         List<ParticleSystem> available = new List<ParticleSystem>();
         for(int i=0; i<particles.Count; i++) {
-            //Debug.Log(particles[i].isStopped);
             if (particles[i].isStopped) {
                 available.Add(particles[i]);
             }
@@ -497,7 +490,6 @@ public class Match3 : MonoBehaviour
             particles.Add(objParticle);
         }
 
-        //Debug.Log(pointPos);
         particle.transform.position = pointPos;
         particle.Play();
         
@@ -696,9 +688,6 @@ public class Match3 : MonoBehaviour
             for(int i = 0; i<connected.Count; i++){
                 List<Point> more = findConnected(connected[i], false);
                 int additional_match = AddPoints(ref connected, more);
-                if (additional_match != 0) {
-                    //Debug.LogFormat("add : {0} more : {1}",additional_match,more.Count);
-                }
             }
         }
 
