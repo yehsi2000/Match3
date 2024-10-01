@@ -205,6 +205,8 @@ public class Match3 : MonoBehaviour
                     }
                 }
                 AddCombo();
+
+                Debug.Log(isDeadlocked());
                 
                 DropNewPiece(matched5list);
                 
@@ -363,9 +365,11 @@ public class Match3 : MonoBehaviour
         //float worldScreenWidth = worldScreenHeight / Screen.height * Screen.width;
         //bgImageObject.transform.localScale = new Vector3(worldScreenWidth / _width*nodeSize*width/1024, worldScreenHeight/_height*nodeSize*height/640,1);
         bgImageObject.transform.localScale = new Vector3(nodeSize*(width+1) / _width, nodeSize*(height+1)/_height,1);
-        InitializeBoard();
-        VerifyBoard();
-        InstantiateBoard();
+        do {
+            InitializeBoard();
+            VerifyBoard();
+            InstantiateBoard();
+        } while (isDeadlocked());
         score = 0;
         Timer.instance.StartTimer();
     }
@@ -381,6 +385,26 @@ public class Match3 : MonoBehaviour
             }
         }
     }
+
+    bool isDeadlocked() {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                Point p = new Point(x, y);
+                int val = getValueAtPoint(p);
+                if (val <= 0) continue;
+                if (y < height- 1) {
+                    Point down = new Point(x, y+1);
+                    if (findConnected(p, false, down).Count > 0) return false;
+                }
+                if (x < width - 1) {
+                    Point right = new Point(x+1, y);
+                    if (findConnected(p, false, right).Count > 0) return false;
+                }
+            }
+        }
+        return true;
+    }
+
 
     /// <summary>
     /// Check if there's any connected block in current board. If there is, remove it and regenerated block in place
@@ -615,9 +639,14 @@ public class Match3 : MonoBehaviour
     /// <param name="p">Initial block position</param>
     /// <param name="main">is this called in Update() function, not recursively in itself?</param>
     /// <returns></returns>
-    List<Point> findConnected(Point p, bool main){
+    List<Point> findConnected(Point p, bool main, Point exchanged = null){
         List<Point> connected = new List<Point>();
-        int val = getValueAtPoint(p);
+        int val;
+        if (exchanged!=null) {
+            val = getValueAtPoint(exchanged);
+        } else {
+            val = getValueAtPoint(p);
+        }
         if (val > pieces.Length + 1) return connected;
         Point[] directions = {
             Point.up, 
@@ -633,6 +662,7 @@ public class Match3 : MonoBehaviour
             int same = 0;
             for(int i = 1; i < 3; i++) {
                 Point check = Point.add(p, Point.mult(dir, i));
+                if (check == exchanged) continue;
                 if(getValueAtPoint(check) == val) {
                     line.Add(check);
                     same++;
@@ -650,6 +680,7 @@ public class Match3 : MonoBehaviour
             int same = 0;
             Point[] check = { Point.add(p, directions[i]), Point.add(p, directions[i + 2]) };
             foreach (Point next in check){
+                if(next== exchanged) continue;
                 if (getValueAtPoint(next) == val){
                     line.Add(next);
                     same++;
@@ -672,6 +703,7 @@ public class Match3 : MonoBehaviour
             Point[] check = { Point.add(p, directions[i]), Point.add(p, directions[next]), Point.add(p, Point.add(directions[i], directions[next])) };
             foreach (Point pnt in check) { 
                 //Check all sides of the piece, if they are the same value, add them to the list
+                if(pnt == exchanged) continue;
                 if (getValueAtPoint(pnt) == val) {
                     square.Add(pnt);
                     same++;
@@ -693,6 +725,7 @@ public class Match3 : MonoBehaviour
 
     }
 
+    
     /// <summary>
     /// Helper function to concat two List of points
     /// </summary>
