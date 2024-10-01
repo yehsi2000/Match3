@@ -68,6 +68,7 @@ public class Match3 : MonoBehaviour
     List<ParticleSystem> particles;
 
     System.Random random;
+    WeightedList<int> myWL;
 
     public static int getWidth() {
         return width;
@@ -347,6 +348,8 @@ public class Match3 : MonoBehaviour
     public void StartGame(){
         string seed = getRandomSeed();
         random = new System.Random(seed.GetHashCode());
+        myWL = new WeightedList<int>(random);
+        for (int i = 1; i <= pieces.Length; ++i) myWL.Add(i, 1);
         update = new List<NodePiece>();
         specialUpdate = new List<Point>();
         flipped = new List<FlippedPieces>();
@@ -435,12 +438,6 @@ public class Match3 : MonoBehaviour
     /// <returns>random normal piece (starting with 1)</returns>
     int GetRandomPieceVal()
     {
-        WeightedList<int> myWL = new WeightedList<int>();
-        for(int i=0; i < pieces.Length; ++i) {
-            myWL.Add(i + 1, 10);
-        }
-        //int val = 1;
-        //val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;
         return myWL.Next();
     }
 
@@ -450,15 +447,11 @@ public class Match3 : MonoBehaviour
     /// <param name="val">values wishes to be generated more often</param>
     /// <returns>weighted random normal piece type(starting with 1)</returns>
     int GetWeightedRandomPieceVal(int val) {
-        WeightedList<int> myWL = new WeightedList<int>();
-        for (int i = 1; i <= pieces.Length; ++i) {
-            if (i == val) continue;
-            myWL.Add(i, 1);
-        }
-        myWL.Add(val, autoBlockWeightMultiplier);
-        //int val = 1;
-        //val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;
-        return myWL.Next();
+        
+        myWL.SetWeight(val, autoBlockWeightMultiplier);
+        int ret = myWL.Next();
+        myWL.SetWeight(val, 1);
+        return ret;
     }
 
     /// <summary>
