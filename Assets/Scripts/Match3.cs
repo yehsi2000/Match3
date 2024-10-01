@@ -447,7 +447,9 @@ public class Match3 : MonoBehaviour
     /// <param name="val">values wishes to be generated more often</param>
     /// <returns>weighted random normal piece type(starting with 1)</returns>
     int GetWeightedRandomPieceVal(int val) {
-        
+        if (!myWL.Contains(val)) {
+            return myWL.Next();
+        }
         myWL.SetWeight(val, autoBlockWeightMultiplier);
         int ret = myWL.Next();
         myWL.SetWeight(val, 1);
@@ -570,7 +572,10 @@ public class Match3 : MonoBehaviour
             while(specialUpdate.Count < 10) {
                 int randomX = random.Next(0, width);
                 int randomY = random.Next(0, height);
-                specialUpdate.Add(new Point(randomX, randomY));
+                Point newpnt = new Point(randomX, randomY);
+                Node newnode = getNodeAtPoint(newpnt);
+                if (newnode.value >= 100) continue;
+                specialUpdate.Add(newpnt);
             }
         } else if (val == 5) {
             //우콩

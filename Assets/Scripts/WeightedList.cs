@@ -113,7 +113,7 @@ namespace KaimiraGames
             Recalculate();
         }
 
-        public void Contains(T item) => _list.Contains(item);
+        public bool Contains(T item) => _list.Contains(item);
 
         public int IndexOf(T item) => _list.IndexOf(item);
 
