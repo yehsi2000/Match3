@@ -44,3 +44,13 @@ Removes all ![상아5](https://github.com/user-attachments/assets/5cf6f81d-f640-
 # Try game online
 http://zekiddo.iptime.org:1144/
 
+# Contributes
+Music generated from Suno by alwayspengwin777
+
+All piece sprite by alwayspengwin777
+
+Main Screen by RH
+
+VFX by KKumbo
+
+
