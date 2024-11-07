@@ -1017,9 +1017,7 @@ MonoBehaviour:
   killedBoard: {fileID: 1302741729}
   gameEndScreen: {fileID: 906328925}
   bgImageObject: {fileID: 771744751}
-  scoreBoard: {fileID: 1286986905}
   finalScore: {fileID: 1453169379}
-  timer: {fileID: 786270581}
   comboDisplay: {fileID: 2097807643}
   nodePiece: {fileID: 2245527992543366604, guid: 6d1f174933d553843aa65f94449f1f4d, type: 3}
   killedPiece: {fileID: 3808634555857249372, guid: d71b84b7cf5668f499d7b372a059f046, type: 3}
@@ -1033,16 +1031,16 @@ MonoBehaviour:
   nodeSize: 2.5
   clickStopInterval: 1
   comboRetainInterval: 1.75
+  bgm: {fileID: 1400955574}
+  comboAudio: {fileID: 1566260230}
   blockPopAudioClips:
   - {fileID: 8300000, guid: f7cbcdf43d16bb24bb92fe6b5d7d9863, type: 3}
   - {fileID: 8300000, guid: 2c6547e757f99064fb9aa194f4f22474, type: 3}
   - {fileID: 8300000, guid: 094d4ff474829124da7aea22c6db1833, type: 3}
-  bgm: {fileID: 1400955574}
   bgmAudioClips:
   - {fileID: 8300000, guid: af2225ddfe04eff4da739f547bf6d4ae, type: 3}
   - {fileID: 8300000, guid: ab4c7f843efff1e45aa483dbd86fd835, type: 3}
   - {fileID: 8300000, guid: 2d5975c0ad4d88d4683152b824ba5bf9, type: 3}
-  comboAudio: {fileID: 1566260230}
   comboAudioClips:
   - {fileID: 8300000, guid: b626e26fcd30eae43a09305f29dfe4d5, type: 3}
   - {fileID: 8300000, guid: 105c1d839348a2445990c903057277a2, type: 3}

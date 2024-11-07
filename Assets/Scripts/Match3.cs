@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using KaimiraGames;
 using static UnityEngine.ParticleSystem;
+using System.Linq;
 
 public class Match3 : MonoBehaviour
 {
@@ -37,16 +38,23 @@ public class Match3 : MonoBehaviour
     [Header("NodeSize")]
     public float nodeSize = 0.8f;
     [Header("Time")]
-    public float clickStopInterval = 0.5f;
-    public float comboRetainInterval = 1.5f;
+    [SerializeField]
+    private float clickStopInterval = 0.5f;
+    [SerializeField]
+    private float comboRetainInterval = 1.5f;
+    
     [Header("Audio")]
-    AudioSource blockPopAudio;
-    public AudioClip[] blockPopAudioClips;
-    public AudioSource bgm;
-    public AudioClip[] bgmAudioClips;
-    public AudioSource comboAudio;
-    public AudioClip[] comboAudioClips;
-
+    [SerializeField]
+    private AudioSource bgm;
+    [SerializeField]
+    private AudioSource comboAudio;
+    private AudioSource blockPopAudio;
+    [SerializeField]
+    private AudioClip[] blockPopAudioClips;
+    [SerializeField]
+    private AudioClip[] bgmAudioClips;
+    [SerializeField]
+    private AudioClip[] comboAudioClips;
 
     private static int width = 14;
     private static int height = 9;
@@ -66,7 +74,7 @@ public class Match3 : MonoBehaviour
     List<ParticleSystem> particles;
 
     System.Random random;
-    WeightedList<int> myWL;
+    List<WeightedList<int>> myWL;
 
     public static int getWidth() {
         return width;
@@ -278,7 +286,7 @@ public class Match3 : MonoBehaviour
                             }
                         }
                         for(int i=0; i<nearValues.Count-1; ++i) {
-                            if (nearValues[i] == nearValues[i + 1]) {
+                            if (nearValues[i] == nearValues[i + 1] && nearValues[i]!=-1) {
                                 if(newVal<100) newVal = GetWeightedRandomPieceVal(nearValues[i]);
                                 break;
                             }
@@ -342,8 +350,15 @@ public class Match3 : MonoBehaviour
     public void StartGame(){
         string seed = getRandomSeed();
         random = new System.Random(seed.GetHashCode());
-        myWL = new WeightedList<int>(random);
-        for (int i = 1; i <= pieces.Length; ++i) myWL.Add(i, 1);
+        myWL = new List<WeightedList<int>>();
+        for (int i = 1; i <= pieces.Length; ++i) {
+            var newWL = new WeightedList<int>(random);
+            for (int j = 1; j <= pieces.Length; ++j) {
+                if(j==i) newWL.Add(j, autoBlockWeightMultiplier);
+                else newWL.Add(j, 1);
+            }
+            myWL.Add(newWL);
+        }
         update = new List<NodePiece>();
         specialUpdate = new List<Point>();
         flipped = new List<FlippedPieces>();
@@ -355,6 +370,7 @@ public class Match3 : MonoBehaviour
         //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         blockPopAudio = GetComponent<AudioSource>();
+        if (!PlayerPrefs.HasKey("bgm")) PlayerPrefs.SetInt("bgm", 0);
         bgm.clip = bgmAudioClips[PlayerPrefs.GetInt("bgm") % bgmAudioClips.Length];
         bgm.Play();
         // set sprite image background to camera size, currently not used
@@ -454,7 +470,9 @@ public class Match3 : MonoBehaviour
     /// <returns>random normal piece (starting with 1)</returns>
     int GetRandomPieceVal()
     {
-        return myWL.Next();
+        int val = 1;
+        val = (random.Next(0, 100) / (100 / pieces.Length)) + 1;
+        return val;
     }
 
     /// <summary>
@@ -463,13 +481,16 @@ public class Match3 : MonoBehaviour
     /// <param name="val">values wishes to be generated more often</param>
     /// <returns>weighted random normal piece type(starting with 1)</returns>
     int GetWeightedRandomPieceVal(int val) {
-        if (!myWL.Contains(val)) {
-            return myWL.Next();
-        }
-        myWL.SetWeight(val, autoBlockWeightMultiplier);
-        int ret = myWL.Next();
-        myWL.SetWeight(val, 1);
-        return ret;
+        if(val<0 || val>pieces.Length) 
+            return GetRandomPieceVal();
+        return myWL[val-1].Next();
+        //if (!myWL.Contains(val)) {
+        //    return myWL.Next();
+        //}
+        //myWL.SetWeight(val, autoBlockWeightMultiplier);
+        //int ret = myWL.Next();
+        //myWL.SetWeight(val, 1);
+        //return ret;
     }
 
     /// <summary>
