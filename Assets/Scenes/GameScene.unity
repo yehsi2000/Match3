@@ -1022,8 +1022,15 @@ MonoBehaviour:
   nodePiece: {fileID: 2245527992543366604, guid: 6d1f174933d553843aa65f94449f1f4d, type: 3}
   killedPiece: {fileID: 3808634555857249372, guid: d71b84b7cf5668f499d7b372a059f046, type: 3}
   popParticle: {fileID: 2903003964780308935, guid: 7c3c0b889305f5d41868b864c234c261, type: 3}
+  specialParticles:
+  - {fileID: 3979004781409326206, guid: deb063d0d62d6e04982f558b2809007c, type: 3}
+  - {fileID: 5485189198205184972, guid: 6198f3ff0fe75ac41827d57de8a45fb8, type: 3}
+  - {fileID: 6416750886598730778, guid: 7fb12fbe201d1bd43a1f6e1f9e9e48dc, type: 3}
+  - {fileID: 6750913421064615777, guid: b3d90ee16cdd9dd42b10fdcb4decb0a7, type: 3}
+  - {fileID: 3979004781409326206, guid: deb063d0d62d6e04982f558b2809007c, type: 3}
+  - {fileID: 3979004781409326206, guid: deb063d0d62d6e04982f558b2809007c, type: 3}
   score: 0
-  autoBlockWeightMultiplier: 3
+  autoBlockWeightMultiplier: 120
   perPieceScore: 5
   match4ExtraScore: 20
   match5ExtraScore: 45

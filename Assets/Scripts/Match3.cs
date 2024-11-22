@@ -9,8 +9,9 @@ using System.Linq;
 
 public class Match3 : MonoBehaviour
 {
+    public static readonly int SPECIALBLOCK = 100;
     public ArrayLayout boardLayout;
-
+    
     public static bool isClickable = true;
 
     [Header("UI Elements")]
@@ -27,10 +28,11 @@ public class Match3 : MonoBehaviour
     public GameObject nodePiece;
     public GameObject killedPiece;
     public GameObject popParticle;
+    public GameObject[] specialParticles;
 
     [Header("Score")]
     public int score;
-    public int autoBlockWeightMultiplier = 5;
+    public int autoBlockWeightMultiplier = 100;
     public int perPieceScore = 5;
     public int match4ExtraScore = 20;
     public int match5ExtraScore = 50;
@@ -78,7 +80,8 @@ public class Match3 : MonoBehaviour
     List<FlippedPieces> flipped;
     List<NodePiece> dead;
     List<KilledPiece> killed;
-    List<ParticleSystem> particles;
+    List<ParticleSystem> particlePool;
+    List<List<ParticleSystem>> specialPool;
 
     System.Random random;
     List<WeightedList<int>> myWL;
@@ -136,7 +139,7 @@ public class Match3 : MonoBehaviour
         //Update for special block activation
         if (specialUpdate.Count > 0) {
             for (int i=0; i<specialUpdate.Count; ++i) {
-                KillPiece(specialUpdate[i]);
+                KillPiece(specialUpdate[i], false);
                 Node node = getNodeAtPoint(specialUpdate[i]);
                 score += perPieceScore;
                 NodePiece nodePiece = node.GetPiece();
@@ -193,7 +196,7 @@ public class Match3 : MonoBehaviour
                         matchTypeCnt[node.value-1].Item2 = pnt.x;
                     }
                     score += perPieceScore;
-                    KillPiece(pnt);
+                    KillPiece(pnt, true);
                     NodePiece nodePiece = node.GetPiece();
                     if(nodePiece != null){
                         //nodePiece.gameObject.SetActive(false);
@@ -294,7 +297,7 @@ public class Match3 : MonoBehaviour
                         }
                         for(int i=0; i<nearValues.Count-1; ++i) {
                             if (nearValues[i] == nearValues[i + 1] && nearValues[i]!=-1) {
-                                if(newVal<100) newVal = GetWeightedRandomPieceVal(nearValues[i]);
+                                if(newVal<Match3.SPECIALBLOCK) newVal = GetWeightedRandomPieceVal(nearValues[i]);
                                 break;
                             }
                         }
@@ -307,7 +310,7 @@ public class Match3 : MonoBehaviour
                         if (specialBlockList != null && specialBlockList.Count > 0) {
                             for (int i = 0; i < specialBlockList.Count; ++i) {
                                 if (specialBlockList[i].Item2 == x) {
-                                    piece.Initialize(100 + specialBlockList[i].Item1, curPoint, specialPieces[specialBlockList[i].Item1], nodeSize);
+                                    piece.Initialize(Match3.SPECIALBLOCK + specialBlockList[i].Item1, curPoint, specialPieces[specialBlockList[i].Item1], nodeSize);
                                     specialBlockList.RemoveAt(i);
                                     break;
                                 } else {
@@ -362,7 +365,7 @@ public class Match3 : MonoBehaviour
             var newWL = new WeightedList<int>(random);
             for (int j = 1; j <= pieces.Length; ++j) {
                 if(j==i) newWL.Add(j, autoBlockWeightMultiplier);
-                else newWL.Add(j, 1);
+                else newWL.Add(j, 100);
             }
             myWL.Add(newWL);
         }
@@ -372,7 +375,11 @@ public class Match3 : MonoBehaviour
         dead = new List<NodePiece>();
         fills = new int[width];
         killed = new List<KilledPiece>();
-        particles = new List<ParticleSystem>();
+        particlePool = new List<ParticleSystem>();
+        specialPool = new List<List<ParticleSystem>>();
+        for (int i = 0; i <= pieces.Length; ++i) {
+            specialPool.Add(new List<ParticleSystem>());
+        }
         comboDisplay.Initialize(comboRetainInterval);
         //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
@@ -404,7 +411,7 @@ public class Match3 : MonoBehaviour
         board = new Node[width, height];
         for(int y = 0; y<height; y++){
             for(int x=0; x<width; x++){
-                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? 5 : GetRandomPieceVal(), new Point(x,y));
+                board[x,y] = new Node((boardLayout.rows[y].row[x]) ? 103 : GetRandomPieceVal(), new Point(x,y));
             }
         }
     }
@@ -464,7 +471,7 @@ public class Match3 : MonoBehaviour
                 NodePiece piece =p.GetComponent<NodePiece>();
                 //RectTransform rect = p.GetComponent<RectTransform>();
                 p.transform.position = new Vector3(nodeSize/2 + (nodeSize * (x-width/2f)), -nodeSize/2 - (nodeSize*(y-height/2f)));
-                if(val>=100) piece.Initialize(val, new Point(x,y), specialPieces[val-100], nodeSize);
+                if(val>=Match3.SPECIALBLOCK) piece.Initialize(val, new Point(x,y), specialPieces[val-SPECIALBLOCK], nodeSize);
                 else piece.Initialize(val, new Point(x,y), pieces[val-1], nodeSize);
                 node.SetPiece(piece);
             }
@@ -514,7 +521,7 @@ public class Match3 : MonoBehaviour
     /// Doesn't really kill piece. Instantiates killpiece prefabs in killboard and make explosion effect on popped pieces
     /// </summary>
     /// <param name="p">Piece which is killed and to be dropped</param>
-    void KillPiece(Point p)
+    void KillPiece(Point p, bool bwithParticle)
     {
         int val = getValueAtPoint(p);
         if (val <= 0) return;
@@ -522,34 +529,56 @@ public class Match3 : MonoBehaviour
         KilledPiece kPiece = kill.GetComponent<KilledPiece>();
 
         Vector2 pointPos = getPositionFromPoint(p);
-
-        List<ParticleSystem> available = new List<ParticleSystem>();
-        for(int i=0; i<particles.Count; i++) {
-            if (particles[i].isStopped) {
-                available.Add(particles[i]);
+        if (bwithParticle || val>=SPECIALBLOCK) {
+            List<ParticleSystem> available = new List<ParticleSystem>();
+            if (val >= SPECIALBLOCK) {
+                for (int i = 0; i < specialPool[val - SPECIALBLOCK].Count; i++) {
+                    if (specialPool[val - SPECIALBLOCK][i].isStopped) {
+                        available.Add(specialPool[val - SPECIALBLOCK][i]);
+                    }
+                }
+            } else {
+                for (int i = 0; i < particlePool.Count; i++) {
+                    if (particlePool[i].isStopped) {
+                        available.Add(particlePool[i]);
+                    }
+                }
             }
-        }
-        ParticleSystem particle = null;
-        if(available.Count > 0) {
-            particle = available[0];
-        } else {
-            
-            GameObject particleObject = GameObject.Instantiate(popParticle,killedBoard.transform);
-            ParticleSystem objParticle = particleObject.GetComponent<ParticleSystem>();
-            particle = objParticle;
-            particles.Add(objParticle);
-        }
+            ParticleSystem particle = null;
+            if (available.Count > 0) {
+                particle = available[0];
+            } else {
+                GameObject particleEffect;
+                if (val >= SPECIALBLOCK) {
+                    particleEffect = specialParticles[val-SPECIALBLOCK];
+                } else {
+                    particleEffect = popParticle;
+                }
 
-        particle.transform.position = pointPos;
-        particle.Play();
+                GameObject particleObject = GameObject.Instantiate(particleEffect, killedBoard.transform);
+                ParticleSystem objParticle = particleObject.GetComponent<ParticleSystem>();
+                particle = objParticle;
+
+                if (val >= SPECIALBLOCK) {
+                    specialPool[val-SPECIALBLOCK].Add(objParticle);
+                } else {
+                    particlePool.Add(objParticle);
+                }
+                
+                
+            }
+            particle.transform.position = pointPos;
+            particle.Play();
+        }
+        
         
         if (kPiece != null && val-1 < pieces.Length)
         {
             kPiece.Initialize(pieces[val-1], pointPos);
             killed.Add(kPiece);
-        } else if(kPiece != null && val-100 < specialPieces.Length) {
-            kPiece.Initialize(specialPieces[val-100], pointPos);
-            SpecialBlockPressed(p,val-100);
+        } else if(kPiece != null && val-SPECIALBLOCK < specialPieces.Length) {
+            kPiece.Initialize(specialPieces[val-SPECIALBLOCK], pointPos);
+            SpecialBlockPressed(p,val-SPECIALBLOCK);
             killed.Add(kPiece);
         }
     }
@@ -574,7 +603,7 @@ public class Match3 : MonoBehaviour
             for (int i = 0; i < width; ++i) 
                 for (int j = 0; j < height; ++j) 
                     specialUpdate.Add(new Point(i, j));
-            } else if (val == 1) {
+        } else if (val == 1) {
             //다비
             //대각선 모두 제거
             specialUpdate.Add(pnt);
@@ -616,7 +645,7 @@ public class Match3 : MonoBehaviour
                 int randomY = random.Next(0, height);
                 Point newpnt = new Point(randomX, randomY);
                 Node newnode = getNodeAtPoint(newpnt);
-                if (newnode.value >= 100) continue;
+                if (newnode.value >= Match3.SPECIALBLOCK) continue;
                 specialUpdate.Add(newpnt);
             }
         } else if (val == 5) {
