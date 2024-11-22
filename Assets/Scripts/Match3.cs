@@ -64,7 +64,14 @@ public class Match3 : MonoBehaviour
     [HideInInspector]
     public int combo = 0;
     public Node[,] board;
-    
+    [HideInInspector]
+    static readonly Point[] directions = {
+        Point.up,
+        Point.right,
+        Point.down,
+        Point.left
+    };
+
 
     List<NodePiece> update;
     List<Point> specialUpdate;
@@ -669,12 +676,7 @@ public class Match3 : MonoBehaviour
             val = getValueAtPoint(p);
         }
         if (val > pieces.Length + 1) return connected;
-        Point[] directions = {
-            Point.up, 
-            Point.right, 
-            Point.down, 
-            Point.left 
-        };
+        
 
         foreach(Point dir in directions) {
             List<Point> line = new List<Point>();
