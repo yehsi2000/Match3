@@ -354,6 +354,17 @@ public class Match3 : MonoBehaviour
         return flip;
     }
 
+    public void SetVolume(float volume) {
+        bgm.volume = volume;
+        PlayerPrefs.SetFloat("volume", volume);
+    }
+
+    public void SetSFXVolume(float volume) {
+        comboAudio.volume = volume;
+        blockPopAudio.volume = volume;
+        PlayerPrefs.SetFloat("sfx_volume", volume);
+    }
+
     /// <summary>
     /// Initialize game variable and set components
     /// </summary>
@@ -386,6 +397,9 @@ public class Match3 : MonoBehaviour
         blockPopAudio = GetComponent<AudioSource>();
         if (!PlayerPrefs.HasKey("bgm")) PlayerPrefs.SetInt("bgm", 0);
         bgm.clip = bgmAudioClips[PlayerPrefs.GetInt("bgm") % bgmAudioClips.Length];
+        bgm.volume = PlayerPrefs.GetFloat("volume", 1);
+        comboAudio.volume = PlayerPrefs.GetFloat("sfx_volume", 1);
+        blockPopAudio.volume = PlayerPrefs.GetFloat("sfx_volume", 1);
         bgm.Play();
         // set sprite image background to camera size, currently not used
         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
