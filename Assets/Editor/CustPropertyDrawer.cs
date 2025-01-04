@@ -8,18 +8,18 @@ public class CustPropertyDrawer : PropertyDrawer {
 	public override void OnGUI(Rect position,SerializedProperty property,GUIContent label){
 		EditorGUI.PrefixLabel(position,label);
 		Rect newposition = position;
-		newposition.y += 18f;
+		newposition.y += Match3.getWidth()*2f;
 		SerializedProperty data = property.FindPropertyRelative("rows");
-        if (data.arraySize != 9)
-            data.arraySize = 9;
+        if (data.arraySize != Match3.getHeight())
+            data.arraySize = Match3.getHeight();
 		//data.rows[0][]
-		for(int j=0;j<9;j++){
+		for(int j=0;j<Match3.getHeight();j++){
 			SerializedProperty row = data.GetArrayElementAtIndex(j).FindPropertyRelative("row");
-			newposition.height = 18f;
-			if(row.arraySize != 14)
-				row.arraySize = 14;
-			newposition.width = position.width/14;
-			for(int i=0;i<14;i++){
+			newposition.height = Match3.getHeight()*2f;
+			if(row.arraySize != Match3.getWidth())
+				row.arraySize = Match3.getWidth();
+			newposition.width = position.width/Match3.getWidth();
+			for(int i=0;i<Match3.getWidth();i++){
 				EditorGUI.PropertyField(newposition,row.GetArrayElementAtIndex(i),GUIContent.none);
 				newposition.x += newposition.width;
 			}
@@ -30,6 +30,6 @@ public class CustPropertyDrawer : PropertyDrawer {
 	}
 
 	public override float GetPropertyHeight(SerializedProperty property,GUIContent label){
-		return 18f * 10;
+		return Match3.getHeight()*2f * 10;
 	}
 }

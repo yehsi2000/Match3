@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -15,7 +16,7 @@ public class KilledPiece : MonoBehaviour
     SpriteRenderer img;
     
     // Start is called before the first frame update
-    public void Initialize(Sprite piece, Vector2 start)
+    public void Initialize(Sprite piece, Vector2 start, float size)
     {
         falling = true;
         moveDir = Vector2.up;
@@ -26,9 +27,7 @@ public class KilledPiece : MonoBehaviour
         
         img.sprite = piece;
         transform.position = start;
-        
-        
-
+        transform.localScale = new Vector3(size / 2.5f, size / 2.5f, 1);
     }
 
     void Update()

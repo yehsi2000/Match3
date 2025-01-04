@@ -25,6 +25,7 @@ public class NodePiece : MonoBehaviour
         value = v;
         SetIndex(p);
         img.sprite = piece;
+        transform.localScale = new Vector3(size / 2.5f, size / 2.5f, 1);
     }
 
     public void SetIndex(Point p){
@@ -52,7 +53,7 @@ public class NodePiece : MonoBehaviour
         transform.position = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
     }
 
-    public bool UpdatePiece(){
+    public bool UpdatePiece() {
         //Debug.LogFormat("dist : {0} obj {1}",Vector3.Distance(rect.anchoredPosition, pos),this.index.x,this.index.y, this.updating);
         if(Vector3.Distance(transform.position, pos) > nodeSize/64f){
             MovePositionTo(pos);
@@ -70,8 +71,7 @@ public class NodePiece : MonoBehaviour
         return updating;
     }
 
-    void OnMouseDown()
-    {
+    void OnMouseDown() {
         if (!Match3.isClickable) {
             Debug.Log("Cannot click");
         };
@@ -79,11 +79,10 @@ public class NodePiece : MonoBehaviour
         MovePieces.instance.MovePiece(this);
     }
 
-    void OnMouseUp()
-    {
+    void OnMouseUp() {
         if (value >= Match3.SPECIALBLOCK) {
             onSpecialBlockPress.Invoke(index, value-Match3.SPECIALBLOCK);
         } else 
-        MovePieces.instance.DropPiece();
+            MovePieces.instance.DropPiece();
     }
 }

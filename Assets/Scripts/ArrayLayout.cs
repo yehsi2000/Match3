@@ -10,5 +10,5 @@ public class ArrayLayout  {
 	}
 
     public Grid grid;
-    public rowData[] rows = new rowData[9]; //Grid of 7x7
+    public rowData[] rows = new rowData[Match3.getHeight()];
 }
