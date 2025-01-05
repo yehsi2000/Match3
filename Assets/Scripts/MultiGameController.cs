@@ -18,7 +18,7 @@ struct SwapPacket {
     public int y2;
 }
 
-public class MultiGameController : Match3 {
+public class MultiGameController : SingleGameController {
     private TcpListener tcpListener;
     private Thread tcpListenerThread;
     private TcpClient connectedTcpClient;
@@ -45,8 +45,8 @@ public class MultiGameController : Match3 {
     }
 
     void ProcessFlip(SwapPacket packet) {
-        Node selected = getNodeAtPoint(new Point(packet.x1, packet.y1));
-        Node flipped = getNodeAtPoint(new Point(packet.x2, packet.y2));
+        Node selected = GetNodeAtPoint(new Point(packet.x1, packet.y1));
+        Node flipped = GetNodeAtPoint(new Point(packet.x2, packet.y2));
         if (selected != null && flipped != null) {
             if (selected.GetPiece() != null && flipped.GetPiece() != null) {
                 //selected.GetPiece().MovePositionTo(flipped.GetPiece().transform.position);

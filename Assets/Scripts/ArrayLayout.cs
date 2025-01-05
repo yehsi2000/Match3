@@ -10,5 +10,5 @@ public class ArrayLayout  {
 	}
 
     public Grid grid;
-    public rowData[] rows = new rowData[Match3.getHeight()];
+    public rowData[] rows = new rowData[SingleGameController.getHeight()];
 }

@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MovePieces : MonoBehaviour
+public class PieceController : MonoBehaviour
 {
-    public static MovePieces instance;
-    Match3 game;
+    public static PieceController instance;
+    SingleGameController game;
 
     NodePiece moving;
     Point newIndex;
@@ -18,7 +18,7 @@ public class MovePieces : MonoBehaviour
 
     void Start()
     {
-        game = GetComponent<Match3>();
+        game = GetComponent<SingleGameController>();
     }
 
     void Update()

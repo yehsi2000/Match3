@@ -12,7 +12,8 @@ public class NodePiece : MonoBehaviour
     public Vector2 pos;
     [SerializeField]
     public float moveSpeed = 16f;
-    static internal UnityEvent<Point,int> onSpecialBlockPress = new UnityEvent<Point, int>();
+    static internal UnityEvent<Point, SingleGameController.SpecialBlockType> onSpecialBlockPress = 
+        new UnityEvent<Point, SingleGameController.SpecialBlockType>();
 
     bool updating;
     SpriteRenderer img;
@@ -36,8 +37,8 @@ public class NodePiece : MonoBehaviour
 
     public void ResetPosition(){
         pos = new Vector2(
-            nodeSize/2 + (nodeSize * ( index.x - Match3.getWidth()/2f )), 
-            -nodeSize/2 - (nodeSize * ( index.y - Match3.getHeight()/2f ))
+            nodeSize/2 + (nodeSize * ( index.x - SingleGameController.getWidth()/2f )), 
+            -nodeSize/2 - (nodeSize * ( index.y - SingleGameController.getHeight()/2f ))
             );
     }
 
@@ -54,7 +55,6 @@ public class NodePiece : MonoBehaviour
     }
 
     public bool UpdatePiece() {
-        //Debug.LogFormat("dist : {0} obj {1}",Vector3.Distance(rect.anchoredPosition, pos),this.index.x,this.index.y, this.updating);
         if(Vector3.Distance(transform.position, pos) > nodeSize/64f){
             MovePositionTo(pos);
             updating = true;
@@ -72,17 +72,17 @@ public class NodePiece : MonoBehaviour
     }
 
     void OnMouseDown() {
-        if (!Match3.isClickable) {
+        if (!SingleGameController.isClickable) {
             Debug.Log("Cannot click");
         };
-        if (updating || !Match3.isClickable) return;
-        MovePieces.instance.MovePiece(this);
+        if (updating || !SingleGameController.isClickable) return;
+        PieceController.instance.MovePiece(this);
     }
 
     void OnMouseUp() {
-        if (value >= Match3.SPECIALBLOCK) {
-            onSpecialBlockPress.Invoke(index, value-Match3.SPECIALBLOCK);
+        if (value >= SingleGameController.SPECIALBLOCK) {
+            onSpecialBlockPress.Invoke(index, (SingleGameController.SpecialBlockType) value - SingleGameController.SPECIALBLOCK);
         } else 
-            MovePieces.instance.DropPiece();
+            PieceController.instance.DropPiece();
     }
 }
