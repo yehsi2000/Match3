@@ -18,7 +18,7 @@ struct SwapPacket {
     public int y2;
 }
 
-public class MultiGameController : SingleGameController {
+public class MultiGameController : GameController {
     private TcpListener tcpListener;
     private Thread tcpListenerThread;
     private TcpClient connectedTcpClient;

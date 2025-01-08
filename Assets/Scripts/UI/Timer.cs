@@ -7,7 +7,7 @@ public class Timer : MonoBehaviour
 {
     TMP_Text timerText;
     float timerTime;
-    public float TIMELEFT = 120f;
+    public float timeleft = 122f;
     public static Timer instance;
 
     private void Awake() {
@@ -25,7 +25,7 @@ public class Timer : MonoBehaviour
 
     public bool UpdateTimer()
     {
-        float timeleft = TIMELEFT + timerTime - Time.time;
+        float timeleft = Mathf.Floor(this.timeleft + timerTime - Time.time);
         timerText.text = Mathf.Floor(timeleft / 60) + ":" + Mathf.RoundToInt(timeleft) % 60;
         //Debug.Log(Time.time);
         if (timeleft <= 0) return false;

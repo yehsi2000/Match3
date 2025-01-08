@@ -16,10 +16,8 @@ public class ComboDisplay : MonoBehaviour
     }
 
     public void Initialize(float combotime) {
-        //comboText = GetComponent<TMP_Text>();
         comboText.enabled = false;
         comboDisplayTime = combotime/2;
-
     }
 
     // Update is called once per frame

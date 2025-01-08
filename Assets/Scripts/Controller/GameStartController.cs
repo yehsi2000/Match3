@@ -19,7 +19,7 @@ public class GameStartController : MonoBehaviour
         SceneManager.LoadScene("SingleGameScene");
     }
 
-    public void ChangeBGM() {
+    public void NextBGM() {
         bgmIndex++;
         bgmIndex %= bgmClips.Length;
         PlayerPrefs.SetInt("bgm", bgmIndex);

@@ -4,21 +4,15 @@ using UnityEngine;
 
 public class PieceController : MonoBehaviour
 {
-    public static PieceController instance;
-    SingleGameController game;
 
     NodePiece moving;
     Point newIndex;
     Vector2 mouseStart;
 
-    private void Awake()
-    {
-        instance = this;
-    }
+    public static PieceController instance;
 
-    void Start()
-    {
-        game = GetComponent<SingleGameController>();
+    private void Awake() {
+        instance = this;
     }
 
     void Update()
@@ -31,7 +25,7 @@ public class PieceController : MonoBehaviour
 
             newIndex = Point.clone(moving.index);
             Point add = Point.zero;
-            if (dir.magnitude > game.nodeSize * 3f) {
+            if (dir.magnitude > GameManager.Instance.boardManager.NodeSize * 3f) {
                 // If our mouse is away from the starting point for certain amount,
                 // select move position based on most moved direction (by checking abs x,y val)
                 if (aDir.x > aDir.y)
@@ -42,9 +36,9 @@ public class PieceController : MonoBehaviour
             newIndex.add(add); //new index for flicked piece
             //bool isOpponentMoving = game.board[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
            
-            Vector2 pos = game.getPositionFromPoint(moving.index);
+            Vector2 pos = GameManager.Instance.gameController.getPositionFromPoint(moving.index);
             if (!newIndex.Equals(moving.index))
-                pos += new Point(add.x, -add.y).ToVector() * game.nodeSize / 4f;
+                pos += new Point(add.x, -add.y).ToVector() * GameManager.Instance.boardManager.NodeSize / 4f;
             moving.MovePositionTo(pos);
         }
     }
@@ -58,12 +52,12 @@ public class PieceController : MonoBehaviour
 
     public void DropPiece()
     {
-        bool isOpponentMoving = game.board[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
+        bool isOpponentMoving = GameManager.Instance.boardManager.Board[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
         if (moving == null) return;
         if (!newIndex.Equals(moving.index) && !isOpponentMoving)
-            game.FlipPieces(moving.index, newIndex, true);
+            GameManager.Instance.gameController.FlipPieces(moving.index, newIndex, true);
         else
-            game.ResetPiece(moving);
+            GameManager.Instance.gameController.ResetPiece(moving);
         moving = null;
     }
 }

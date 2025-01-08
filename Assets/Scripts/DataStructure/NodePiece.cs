@@ -1,32 +1,45 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class NodePiece : MonoBehaviour
 {
-    public int value;
+    [SerializeField]
+    protected INodeType nodeVal;
+    
+    public INodeType NodeVal {
+        get { return nodeVal; }
+    }
+
     public Point index;
+
     [HideInInspector]
     public Vector2 pos;
+
     [SerializeField]
     public float moveSpeed = 16f;
-    static internal UnityEvent<Point, SingleGameController.SpecialBlockType> onSpecialBlockPress = 
-        new UnityEvent<Point, SingleGameController.SpecialBlockType>();
 
-    bool updating;
-    SpriteRenderer img;
-    float nodeSize;
+    protected bool updating;
+    protected SpriteRenderer img;
+    protected float nodeSize;
+    protected float boardWidth;
+    protected float boardHeight;
 
-    public void Initialize(int v, Point p, Sprite piece, float size){
+    static internal UnityEvent<Point, SpecialType> onSpecialBlockPress = 
+        new UnityEvent<Point, SpecialType>();
+
+    public void Initialize(INodeType type, Point p, Sprite piece, float size, float width, float height){
         img = GetComponent<SpriteRenderer>();
         nodeSize = size;
-
-        value = v;
+        nodeVal = type;
         SetIndex(p);
         img.sprite = piece;
         transform.localScale = new Vector3(size / 2.5f, size / 2.5f, 1);
+        boardWidth = width;
+        boardHeight = height;
     }
 
     public void SetIndex(Point p){
@@ -37,8 +50,8 @@ public class NodePiece : MonoBehaviour
 
     public void ResetPosition(){
         pos = new Vector2(
-            nodeSize/2 + (nodeSize * ( index.x - SingleGameController.getWidth()/2f )), 
-            -nodeSize/2 - (nodeSize * ( index.y - SingleGameController.getHeight()/2f ))
+            nodeSize/2 + (nodeSize * ( index.x - boardWidth / 2f )), 
+            -nodeSize/2 - (nodeSize * ( index.y - boardHeight / 2f ))
             );
     }
 
@@ -47,21 +60,21 @@ public class NodePiece : MonoBehaviour
     }
 
     public void MovePosition(Vector2 move){
-        transform.position += new Vector3(move.x,move.y,0) * Time.deltaTime * moveSpeed;
+        transform.localPosition += new Vector3(move.x,move.y,0) * Time.deltaTime * moveSpeed;
     }
 
     public void MovePositionTo(Vector2 move){
-        transform.position = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
+        transform.localPosition = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
     }
 
     public bool UpdatePiece() {
-        if(Vector3.Distance(transform.position, pos) > nodeSize/64f){
+        if(Vector3.Distance(transform.localPosition, pos) > nodeSize / 64f){
             MovePositionTo(pos);
             updating = true;
             return true;
         }
         else {
-            transform.position = pos;
+            transform.localPosition = pos;
             updating = false;
             return false;
         }
@@ -72,17 +85,18 @@ public class NodePiece : MonoBehaviour
     }
 
     void OnMouseDown() {
-        if (!SingleGameController.isClickable) {
-            Debug.Log("Cannot click");
-        };
-        if (updating || !SingleGameController.isClickable) return;
+        if (!GameController.isClickable) Debug.Log("Cannot click");
+
+        if (updating || !GameController.isClickable) return;
+
         PieceController.instance.MovePiece(this);
     }
 
     void OnMouseUp() {
-        if (value >= SingleGameController.SPECIALBLOCK) {
-            onSpecialBlockPress.Invoke(index, (SingleGameController.SpecialBlockType) value - SingleGameController.SPECIALBLOCK);
-        } else 
+        if (nodeVal is SpecialType) {
+            onSpecialBlockPress.Invoke(index, (nodeVal as SpecialType));
+        } else {
             PieceController.instance.DropPiece();
+        }
     }
 }

@@ -683,7 +683,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1843417767}
         m_TargetAssemblyTypeName: GameStartController, Assembly-CSharp
-        m_MethodName: ChangeBGM
+        m_MethodName: NextBGM
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3636,8 +3636,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bgmClips:
   - {fileID: 8300000, guid: 9538306f4b0f5044e9b803dcfc561597, type: 3}
-  - {fileID: 8300000, guid: b496926a00f9b534f9e85c16640b584c, type: 3}
   - {fileID: 8300000, guid: f9fa18d8bbb233b4e9108ed7edd9da35, type: 3}
+  - {fileID: 8300000, guid: b496926a00f9b534f9e85c16640b584c, type: 3}
   bgmIndex: 0
 --- !u!4 &1843417768
 Transform:
