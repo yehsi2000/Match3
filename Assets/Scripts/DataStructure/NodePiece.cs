@@ -1,14 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.UI;
 
 public class NodePiece : MonoBehaviour
 {
     [SerializeField]
-    protected INodeType nodeVal;
+    INodeType nodeVal;
     
     public INodeType NodeVal {
         get { return nodeVal; }
@@ -22,17 +20,28 @@ public class NodePiece : MonoBehaviour
     [SerializeField]
     public float moveSpeed = 16f;
 
-    protected bool updating;
-    protected SpriteRenderer img;
-    protected float nodeSize;
-    protected float boardWidth;
-    protected float boardHeight;
+    bool updating;
+    SpriteRenderer img;
+    float nodeSize;
+    Board board;
 
-    static internal UnityEvent<Point, SpecialType> onSpecialBlockPress = 
-        new UnityEvent<Point, SpecialType>();
+    public float NodeSize {
+        get { return nodeSize; }
+    }
 
-    public void Initialize(INodeType type, Point p, Sprite piece, float size, float width, float height){
+    public Board GetBoard{
+        get { return board; }
+    }
+
+    float boardWidth;
+    float boardHeight;
+
+    static internal UnityEvent<Board, Point, SpecialType> onSpecialBlockPress = 
+        new UnityEvent<Board, Point, SpecialType>();
+
+    public void Initialize(INodeType type, Board b, Point p, Sprite piece, float size, float width, float height){
         img = GetComponent<SpriteRenderer>();
+        board = b;
         nodeSize = size;
         nodeVal = type;
         SetIndex(p);
@@ -94,9 +103,9 @@ public class NodePiece : MonoBehaviour
 
     void OnMouseUp() {
         if (nodeVal is SpecialType) {
-            onSpecialBlockPress.Invoke(index, (nodeVal as SpecialType));
+            onSpecialBlockPress.Invoke(board, index, (nodeVal as SpecialType));
         } else {
-            PieceController.instance.DropPiece();
+            PieceController.instance.DropPiece(board);
         }
     }
 }

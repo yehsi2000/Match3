@@ -1,122 +1,182 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
+using TMPro;
 using UnityEngine;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Text;
-using UnityEditor.Sprites;
+using UnityEngine.SceneManagement;
+using KaimiraGames;
+using UnityEditor;
+
+[InitializeOnLoad]
+public class MultiGameController : MonoBehaviour {
+
+    [SerializeField]
+    GameManager game;
 
 
-[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-struct SwapPacket {
-    public int x1;
-    public int y1;
-    public int x2;
-    public int y2;
-}
+    public static readonly int SPECIALBLOCK = 100;
+    //public ArrayLayout boardLayout;
+    public static bool isClickable = true;
 
-public class MultiGameController : GameController {
-    private TcpListener tcpListener;
-    private Thread tcpListenerThread;
-    private TcpClient connectedTcpClient;
-    private Queue<SwapPacket> packetQueue;
+    [Header("UI Elements")]
 
-    protected override void Start() {
-        base.Start();
-        packetQueue = new Queue<SwapPacket>();
+
+    public GameObject gameEndScreen;
+    public GameObject bgImageObject;
+    public TMP_Text finalScore;
+    public ComboDisplay comboDisplay;
+
+    [Header("Prefabs")]
+
+
+    [Header("Score")]
+    public int autoBlockWeightMultiplier = 100;
+    public int perPieceScore = 5;
+    public int match4ExtraScore = 20;
+    public int match5ExtraScore = 50;
+    public int match6plusExtraScore = 100;
+
+
+
+    [Header("Time")]
+    [SerializeField]
+    float clickStopInterval = 0.5f;
+    float clickableTime = 0f;
+
+    public float ClickStopInterval {
+        get { return clickStopInterval; }
     }
 
-    protected override void Awake() {
-        base.Awake();
-        tcpListenerThread = new Thread(new ThreadStart(ListenForIncommingRequest));
-        tcpListenerThread.IsBackground = true;
-        tcpListenerThread.Start();
+    [SerializeField]
+    float comboRetainInterval = 1.5f;
+
+    int width;
+    int height;
+
+    [HideInInspector]
+    public int combo = 0;
+
+    float comboTime = 0f;
+
+    System.Random random;
+
+    public System.Random Random {
+        get { return random; }
     }
 
-    protected override void Update() {
-        base.Update();
-        if (packetQueue.Count > 0) {
-            SwapPacket packet = packetQueue.Dequeue();
-            ProcessFlip(packet);
+    void Awake() {
+        game = GetComponent<GameManager>();
+    }
+
+    public void Reset() {
+        StartGame();
+        gameEndScreen.SetActive(false);
+    }
+
+    void Start() {
+        StartGame();
+        gameEndScreen.SetActive(false);
+    }
+
+    void Update() {
+        //update timer
+        game.timerController.TimerTick();
+
+        //prevent clicking while special block popping
+        if (comboTime <= 0) combo = 0;
+        else comboTime -= Time.deltaTime;
+
+         //TODO
+         //for(int i = 0; i < boards; i++) {
+         //   game.boardController.boardUpdate(boards.manager);
+         //}
+
+        PreventClick();
+    }
+
+    /// <summary>
+    /// Initialize game variable and set components
+    /// </summary>
+    public void StartGame() {
+        string seed = getRandomSeed();
+        random = new System.Random(seed.GetHashCode());
+
+
+        width = game.boardManager.Width;
+        height = game.boardManager.Height;
+        if (width == 0 || height == 0) {
+            throw new System.Exception("Board size is not set");
         }
+
+        game.scoreManager.Initialize();
+        comboDisplay.Initialize(comboRetainInterval);
+        Timer.instance.StartTimer();
+
+        game.audioController.PlayBGM();
+
+        //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+        //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
+
+        // set sprite image background to camera size, currently not used
+        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
+
+        float _width = bgSpriteRenderer.bounds.size.x;
+        float _height = bgSpriteRenderer.bounds.size.y;
+
+        // set background image to gameboard size
+        bgImageObject.transform.localScale = new Vector3(game.boardManager.NodeSize * (width + 1)
+            / _width, game.boardManager.NodeSize
+            * (height + 1) / _height, 1);
+
+        //loop to get non-matching board
+        //game.boardController.InitBoard();
     }
 
-    void ProcessFlip(SwapPacket packet) {
-        Node selected = GetNodeAtPoint(new Point(packet.x1, packet.y1));
-        Node flipped = GetNodeAtPoint(new Point(packet.x2, packet.y2));
-        if (selected != null && flipped != null) {
-            if (selected.GetPiece() != null && flipped.GetPiece() != null) {
-                //selected.GetPiece().MovePositionTo(flipped.GetPiece().transform.position);
-                //flipped.GetPiece().MovePositionTo(selected.GetPiece().transform.position);
-                FlipPieces(new Point(packet.x1, packet.y1), new Point(packet.x2, packet.y2), true);
-            }
+    void PreventClick() {
+        if (clickableTime <= 0) isClickable = true;
+        else clickableTime -= Time.deltaTime;
+    }
+
+    /// <summary>
+    /// Increment Combo and perform related jobs like sfx, score, combo
+    /// </summary>
+
+    public void Matched() {
+        combo++;
+        comboTime = comboRetainInterval;
+        comboDisplay.UpdateCombo(combo);
+
+        if (combo % 5 == 0 && combo > 0) {
+            game.audioController.PlayComboAudio(combo);
         }
+        game.scoreManager.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
+        game.audioController.PlayBlockPopAudio();
     }
 
-    protected override void SendFlip(NodePiece selected, NodePiece flipped) {
-        if (connectedTcpClient == null) {
-            Debug.Log("No client connected");
-            return;
-        }
-        if (selected != null && flipped != null) {
-            Debug.Log($"Flip {selected.index.x} {selected.index.y} with {flipped.index.x} {flipped.index.y}");
-            SwapPacket packet = new SwapPacket();
-            packet.x1 = selected.index.x;
-            packet.y1 = selected.index.y;
-            packet.x2 = flipped.index.x;
-            packet.y2 = flipped.index.y;
-            byte[] data = StructureToByteArray(packet);
-            connectedTcpClient.GetStream().Write(data, 0, data.Length);
-        }
+    public void BacktoTitle() {
+        SceneManager.LoadScene("StartScene");
     }
 
-    private void Connect() {
-
+    public void SpecialBlockPressed() {
+        isClickable = false;
+        clickableTime = ClickStopInterval;
+        Matched();
     }
 
-    private void ListenForIncommingRequest() {
-        try {
-            tcpListener = new TcpListener(IPAddress.Any, 5000);
-            tcpListener.Start();
-            Debug.Log("Server is listening");
-            Byte[] bytes = new Byte[1024];
-            while (true) {
-                using (connectedTcpClient = tcpListener.AcceptTcpClient()) {
-                    using (NetworkStream stream = connectedTcpClient.GetStream()) {
-                        int length;
-                        while ((length = stream.Read(bytes, 0, bytes.Length)) != 0) {
-                            var incommingData = new byte[length];
-                            Array.Copy(bytes, 0, incommingData, 0, length);
-                            SwapPacket packet = new SwapPacket();
-                            packet = ByteArrayToStructure<SwapPacket>(incommingData);
-                            Debug.Log("Received: " + packet.x1 + " " + packet.y1 + " " + packet.x2 + " " + packet.y2);
-                            packetQueue.Enqueue(packet);
-                        }
-                    }
-                }
-            }
-        } catch (SocketException socketException) {
-            Debug.Log("SocketException " + socketException.ToString());
-        }
+    string getRandomSeed() {
+        string seed = "";
+        string acceptableChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!@#$%^&*()";
+        for (int i = 0; i < 20; i++)
+            seed += acceptableChars[UnityEngine.Random.Range(0, acceptableChars.Length)];
+        return seed;
     }
 
-    public static T ByteArrayToStructure<T>(byte[] bytes) where T : struct {
-        GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-        T stuff = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
-        handle.Free();
-        return stuff;
-    }
+    public void GameOver() {
+        //game.boardController.DisableBoards();
+        gameEndScreen.SetActive(true);
 
-    public static byte[] StructureToByteArray<T>(T structure) where T : struct {
-        int size = Marshal.SizeOf(structure);
-        byte[] arr = new byte[size];
-        IntPtr ptr = Marshal.AllocHGlobal(size);
-        Marshal.StructureToPtr(structure, ptr, true);
-        Marshal.Copy(ptr, arr, 0, size);
-        Marshal.FreeHGlobal(ptr);
-        return arr;
+        game.audioController.Stop();
+
+        finalScore.text = "Final Score : " + game.scoreManager.Score;
+        this.enabled = false;
     }
 }

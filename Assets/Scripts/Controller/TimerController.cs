@@ -1,16 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
-using UnityEngine.UIElements;
 
 public class TimerController : MonoBehaviour
 {
     double timeleft;
+    GameManager game;
+
+    private void Awake() {
+        game = GetComponent<GameManager>();
+    }
     public void TimerTick() {
         if (!Timer.instance.UpdateTimer()) {
-            GameManager.Instance.gameController.GameOver();
+            game.gameController.GameOver();
         }
     }
 }

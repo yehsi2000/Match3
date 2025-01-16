@@ -7,18 +7,20 @@ using UnityEngine.Events;
 public class KilledPiece : MonoBehaviour
 {
     public bool falling;
+    Board board;
 
     public float speed = 16f;
     public float gravity = 32f;
-    static internal UnityEvent<KilledPiece> onKilledPieceRemove = new UnityEvent<KilledPiece>();
+    static internal UnityEvent<Board, KilledPiece> onKilledPieceRemove = new UnityEvent<Board, KilledPiece>();
     Vector2 moveDir;
     
     SpriteRenderer img;
     
     // Start is called before the first frame update
-    public void Initialize(Sprite piece, Vector2 start, float size)
+    public void Initialize(Board b, Sprite piece, Vector2 start, float size)
     {
         falling = true;
+        board = b;
         moveDir = Vector2.up;
         moveDir.x = Random.Range(-1.0f, 1.0f);
         moveDir *= speed / 2;
@@ -40,7 +42,7 @@ public class KilledPiece : MonoBehaviour
         //if (rect.position.x < -32f || rect.position.x > Screen.width + 32f || rect.position.y < -32f || rect.position.y > Screen.height + 32f)
         if (!GetComponent<Renderer>().isVisible) {
             //falling = false;
-            onKilledPieceRemove.Invoke(this);
+            onKilledPieceRemove.Invoke(board, this);
             Destroy(this.gameObject);
         }
             

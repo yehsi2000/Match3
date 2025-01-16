@@ -4,27 +4,21 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    private static GameManager instance;
-
-    public static GameManager Instance {
-        get {
-            return instance;
-        }
-    }
-
+    public TimerController timerController;
+    public PieceController pieceController;
+    public AudioController audioController;
+    public BoardController boardController;
+    public ParticleController particleController;
     public GameController gameController;
 
-    public BoardManager boardManager;
-
+    public Board boardManager;
     public ScoreManager scoreManager;
 
     private void Awake() {
-        instance = this;
-    }
-
-    private void Start() {
         gameController = GetComponent<GameController>();
-        boardManager = GetComponent<BoardManager>();
+        boardManager = GetComponent<Board>();
         scoreManager = GetComponent<ScoreManager>();
     }
+
+    
 }
