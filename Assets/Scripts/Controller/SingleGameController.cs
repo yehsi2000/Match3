@@ -7,18 +7,22 @@ using KaimiraGames;
 using UnityEditor;
 
 [InitializeOnLoad]
-public class GameController : MonoBehaviour {
+public class SingleGameController : GameControllerBase {
+
+    [SerializeField]
+    protected BoardController boardController;
+
+    [SerializeField]
+    protected ScoreManager scoreManager;
+
+    [SerializeField]
+    protected TimerController timerController;
+
+    [SerializeField]
+    protected AudioController audioController;
 
     [SerializeField]
     Board gameBoard;
-    BoardController boardController;
-    ScoreManager scoreManager;
-    TimerController timerController;
-    AudioController audioController;
-
-
-    public static readonly int SPECIALBLOCK = 100;
-    public static bool isClickable = true;
 
     [Header("UI Elements")]
     public GameObject gameEndScreen;
@@ -33,17 +37,22 @@ public class GameController : MonoBehaviour {
     public int match5ExtraScore = 50;
     public int match6plusExtraScore = 100;
 
+    public override int AutoBlockWeightMultiplier {
+        get { return autoBlockWeightMultiplier; }
+    }
+
     [Header("Time")]
     [SerializeField]
-    float clickStopInterval = 0.5f;
-    float clickableTime = 0f;
+    protected float clickStopInterval = 0.5f;
+    [SerializeField]
+    protected float clickableTime = 0f;
 
     public float ClickStopInterval {
         get { return clickStopInterval; }
     }
 
     [SerializeField]
-    float comboRetainInterval = 1.5f;
+    protected float comboRetainInterval = 1.5f;
 
     int width;
     int height;
@@ -51,20 +60,7 @@ public class GameController : MonoBehaviour {
     [HideInInspector]
     public int combo = 0;
 
-    float comboTime = 0f;
-
-    System.Random random;
-
-    public System.Random Random {
-        get { return random; }
-    }
-
-    void Awake() {
-        boardController = GetComponent<BoardController>();
-        scoreManager = GetComponent<ScoreManager>();
-        timerController = GetComponent<TimerController>();
-        audioController = GetComponent<AudioController>();
-    }
+    protected float comboTime = 0f;
 
     public void Reset() {
         StartGame();
@@ -76,7 +72,7 @@ public class GameController : MonoBehaviour {
         gameEndScreen.SetActive(false);
     }
 
-    void Update() {
+    protected virtual void Update() {
         //update timer
         timerController.TimerTick();
 
@@ -92,9 +88,9 @@ public class GameController : MonoBehaviour {
     /// <summary>
     /// Initialize game variable and set components
     /// </summary>
-    public void StartGame() {
+    public virtual void StartGame() {
         string seed = getRandomSeed();
-        random = new System.Random(seed.GetHashCode());
+        gameBoard.rng = new System.Random(seed.GetHashCode());
         
 
         width = gameBoard.Width;
@@ -126,7 +122,7 @@ public class GameController : MonoBehaviour {
         //loop to get non-matching board
         boardController.InitBoard(gameBoard);
     }
-    public void ProcessMatch(Board board, List<Point> connected) {
+    public override void ProcessMatch(Board board, List<Point> connected) {
         // idx : piece value ,
         // item1 :piece cnt,
         // item2 : xpos of last updated piece
@@ -146,7 +142,7 @@ public class GameController : MonoBehaviour {
 
             scoreManager.AddScore(perPieceScore);
 
-            boardController.KillPiece(gameBoard, pnt, true);
+            boardController.KillPiece(board, pnt, true);
 
             NodePiece nodePiece = node.GetPiece();
             if (nodePiece != null) Destroy(nodePiece.gameObject);
@@ -177,11 +173,11 @@ public class GameController : MonoBehaviour {
         }
 
         Matched();
-        boardController.DropNewPiece(gameBoard, matched5list);
+        boardController.DropNewPiece(board, matched5list);
     }
 
-    void PreventClick() {
-        if (clickableTime <= 0) isClickable = true;
+    protected void PreventClick() {
+        if (clickableTime <= 0) GameManager.instance.IsClickable = true;
         else clickableTime -= Time.deltaTime;
     }
 
@@ -205,14 +201,14 @@ public class GameController : MonoBehaviour {
         SceneManager.LoadScene("StartScene");
     }
 
-    public void SpecialBlockPressed() {
+    public override void SpecialBlockPressed() {
         scoreManager.AddScore(perPieceScore);
-        isClickable = false;
+        GameManager.instance.IsClickable = false;
         clickableTime = ClickStopInterval;
         Matched();
     }
 
-    string getRandomSeed() {
+    protected string getRandomSeed() {
         string seed = "";
         string acceptableChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!@#$%^&*()";
         for (int i = 0; i < 20; i++)
@@ -220,7 +216,7 @@ public class GameController : MonoBehaviour {
         return seed;
     }
 
-    public void GameOver() {
+    public virtual void GameOver() {
         boardController.DisableBoards(gameBoard);
         gameEndScreen.SetActive(true);
 

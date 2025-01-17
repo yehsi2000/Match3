@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class GameStartController : MonoBehaviour
-{
+public class GameStartController : MonoBehaviour {
+    [SerializeField]
+    [SerializeField]
     AudioSource bgmAudio;
     public AudioClip[] bgmClips;
     public int bgmIndex;

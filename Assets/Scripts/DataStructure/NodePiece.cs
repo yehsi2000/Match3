@@ -58,7 +58,7 @@ public class NodePiece : MonoBehaviour
     }
 
     public void ResetPosition(){
-        pos = new Vector2(
+        pos = board.transform.position + new Vector3(
             nodeSize/2 + (nodeSize * ( index.x - boardWidth / 2f )), 
             -nodeSize/2 - (nodeSize * ( index.y - boardHeight / 2f ))
             );
@@ -69,21 +69,22 @@ public class NodePiece : MonoBehaviour
     }
 
     public void MovePosition(Vector2 move){
-        transform.localPosition += new Vector3(move.x,move.y,0) * Time.deltaTime * moveSpeed;
+        transform.position += new Vector3(move.x,move.y,0) * Time.deltaTime * moveSpeed;
     }
 
     public void MovePositionTo(Vector2 move){
-        transform.localPosition = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
+        Debug.Log(move);
+        transform.position = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
     }
 
     public bool UpdatePiece() {
-        if(Vector3.Distance(transform.localPosition, pos) > nodeSize / 64f){
+        if(Vector3.Distance(transform.position, pos) > nodeSize / 64f){
             MovePositionTo(pos);
             updating = true;
             return true;
         }
         else {
-            transform.localPosition = pos;
+            transform.position = pos;
             updating = false;
             return false;
         }

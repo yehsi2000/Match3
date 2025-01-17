@@ -11,8 +11,8 @@ public class GameManager : MonoBehaviour
     public ParticleController particleController;
     public GameController gameController;
 
-    public Board boardManager;
-    public ScoreManager scoreManager;
+    [SerializeField]
+    SingleGameController gameController;
 
     private void Awake() {
         gameController = GetComponent<GameController>();

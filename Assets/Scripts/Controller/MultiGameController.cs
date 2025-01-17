@@ -7,7 +7,7 @@ using KaimiraGames;
 using UnityEditor;
 
 [InitializeOnLoad]
-public class MultiGameController : MonoBehaviour {
+public class MultiGameController : GameControllerBase {
 
     [SerializeField]
     GameManager game;
@@ -19,6 +19,8 @@ public class MultiGameController : MonoBehaviour {
 
     [Header("UI Elements")]
 
+    [SerializeField]
+    Board[] gameBoards;
 
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
@@ -35,7 +37,9 @@ public class MultiGameController : MonoBehaviour {
     public int match5ExtraScore = 50;
     public int match6plusExtraScore = 100;
 
-
+    public override int AutoBlockWeightMultiplier {
+        get { return autoBlockWeightMultiplier; }
+    }
 
     [Header("Time")]
     [SerializeField]
@@ -57,16 +61,6 @@ public class MultiGameController : MonoBehaviour {
 
     float comboTime = 0f;
 
-    System.Random random;
-
-    public System.Random Random {
-        get { return random; }
-    }
-
-    void Awake() {
-        game = GetComponent<GameManager>();
-    }
-
     public void Reset() {
         StartGame();
         gameEndScreen.SetActive(false);
@@ -85,11 +79,9 @@ public class MultiGameController : MonoBehaviour {
         if (comboTime <= 0) combo = 0;
         else comboTime -= Time.deltaTime;
 
-         //TODO
-         //for(int i = 0; i < boards; i++) {
-         //   game.boardController.boardUpdate(boards.manager);
-         //}
-
+        foreach (Board gameBoard in gameBoards) {
+            boardController.boardUpdate(gameBoard);
+        }
         PreventClick();
     }
 
@@ -98,14 +90,16 @@ public class MultiGameController : MonoBehaviour {
     /// </summary>
     public void StartGame() {
         string seed = getRandomSeed();
-        random = new System.Random(seed.GetHashCode());
-
-
-        width = game.boardManager.Width;
-        height = game.boardManager.Height;
-        if (width == 0 || height == 0) {
-            throw new System.Exception("Board size is not set");
+        for(int i=0; i< gameBoards.Length; i++) {
+            gameBoards[i].rng = new System.Random(seed.GetHashCode());
         }
+
+
+        //width = gameBoard.Width;
+        //height = gameBoard.Height;
+        //if (width == 0 || height == 0) {
+        //    throw new System.Exception("Board size is not set");
+        //}
 
         game.scoreManager.Initialize();
         comboDisplay.Initialize(comboRetainInterval);
@@ -123,12 +117,67 @@ public class MultiGameController : MonoBehaviour {
         float _height = bgSpriteRenderer.bounds.size.y;
 
         // set background image to gameboard size
-        bgImageObject.transform.localScale = new Vector3(game.boardManager.NodeSize * (width + 1)
-            / _width, game.boardManager.NodeSize
-            * (height + 1) / _height, 1);
+        //bgImageObject.transform.localScale = new Vector3(gameBoard.NodeSize * (width + 1)
+        //    / _width, gameBoard.NodeSize
+        //    * (height + 1) / _height, 1);
 
         //loop to get non-matching board
-        //game.boardController.InitBoard();
+        foreach(Board gameBoard in gameBoards) {
+            boardController.InitBoard(gameBoard);
+        }
+    }
+    public override void ProcessMatch(Board board, List<Point> connected) {
+        // idx : piece value ,
+        // item1 :piece cnt,
+        // item2 : xpos of last updated piece
+        var matchTypeCnt = new Dictionary<NormalType.ENormalType, ValueTuple<int, int>>();
+
+        //remove the node pieces connected
+        foreach (Point pnt in connected) {
+            Node node = board.GetNodeAtPoint(pnt);
+
+            //if node is normal piece(not special, not hole, not blank)
+            if (node.typeVal is NormalType) {
+                NormalType.ENormalType idx = (node.typeVal as NormalType).TypeVal;
+                if (!matchTypeCnt.TryAdd(idx, new ValueTuple<int, int>(1, pnt.x))) {
+                    matchTypeCnt[idx] = new ValueTuple<int, int>(matchTypeCnt[idx].Item1 + 1, pnt.x);
+                }
+            }
+
+            scoreManager.AddScore(perPieceScore);
+
+            boardController.KillPiece(board, pnt, true);
+
+            NodePiece nodePiece = node.GetPiece();
+            if (nodePiece != null) Destroy(nodePiece.gameObject);
+            node.SetPiece(null);
+        }
+
+        var matched5list = new List<ValueTuple<SpecialType, int>>();
+
+        foreach (NormalType.ENormalType j in System.Enum.GetValues(typeof(NormalType.ENormalType))) {
+            if (!matchTypeCnt.ContainsKey(j)) continue;
+            if (matchTypeCnt[j].Item1 == 4) {
+                scoreManager.AddScore(match4ExtraScore);
+
+            }
+            else if (matchTypeCnt[j].Item1 == 5) {
+                scoreManager.AddScore(match5ExtraScore);
+
+                //send block's info which matched 5
+                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
+
+            }
+            else if (matchTypeCnt[j].Item1 > 5) {
+                scoreManager.AddScore(match6plusExtraScore);
+
+                //send block's info 5or more matched block is in  line
+                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
+            }
+        }
+
+        Matched();
+        boardController.DropNewPiece(board, matched5list);
     }
 
     void PreventClick() {
@@ -156,8 +205,9 @@ public class MultiGameController : MonoBehaviour {
         SceneManager.LoadScene("StartScene");
     }
 
-    public void SpecialBlockPressed() {
-        isClickable = false;
+    public override void SpecialBlockPressed() {
+        scoreManager.AddScore(perPieceScore);
+        GameManager.instance.IsClickable = false;
         clickableTime = ClickStopInterval;
         Matched();
     }
@@ -171,7 +221,9 @@ public class MultiGameController : MonoBehaviour {
     }
 
     public void GameOver() {
-        //game.boardController.DisableBoards();
+        foreach (Board gameBoard in gameBoards)
+            boardController.DisableBoards(gameBoard);
+
         gameEndScreen.SetActive(true);
 
         game.audioController.Stop();

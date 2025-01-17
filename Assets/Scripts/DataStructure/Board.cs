@@ -28,6 +28,7 @@ public class Board : MonoBehaviour
     public List<FlippedPieces> flippedList;
     public List<KilledPiece> killedPieceList;
 
+    public System.Random rng;
 
     public float NodeSize {
         get { return nodeSize; }
@@ -90,7 +91,7 @@ public class Board : MonoBehaviour
     }
 
     public Vector2 getPositionFromPoint(Point p) {
-        return new Vector2(NodeSize / 2 + (NodeSize * (p.x - width / 2f)), 
+        return this.transform.position + new Vector3(NodeSize / 2 + (NodeSize * (p.x - width / 2f)), 
             -NodeSize / 2 - (NodeSize * (p.y - height / 2f)));
     }
 }

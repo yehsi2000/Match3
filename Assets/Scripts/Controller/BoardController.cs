@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class BoardController : MonoBehaviour {
-    GameController gameController;
+
+    [SerializeField]
+    GameControllerBase gameController;
 
     public Sprite[] pieces;
     public Sprite[] specialPieces;
@@ -40,11 +42,10 @@ public class BoardController : MonoBehaviour {
     public void InitBoard(Board board) {
         weightedLists = new List<WeightedList<int>>();
         blockSpawnOffset = new int[board.Width];
-
         for (int i = 0; i < System.Enum.GetValues(typeof(NormalType.ENormalType)).Length; ++i) {
-            var newWL = new WeightedList<int>(gameController.Random);
+            var newWL = new WeightedList<int>(board.rng);
             for (int j = 0; j < System.Enum.GetValues(typeof(NormalType.ENormalType)).Length; ++j) {
-                if (j == i) newWL.Add(j, gameController.autoBlockWeightMultiplier);
+                if (j == i) newWL.Add(j, gameController.AutoBlockWeightMultiplier);
                 else newWL.Add(j, 100);
             }
             weightedLists.Add(newWL);
@@ -82,7 +83,7 @@ public class BoardController : MonoBehaviour {
 
         for (int y = 0; y < board.Height; y++) {
             for (int x = 0; x < board.Width; x++) {
-                board.BoardNode[x, y] = new Node((boardLayout.rows[y].row[x]) ? new SpecialType(SpecialType.ESpecialType.LIZA) : GetRandomPieceVal(), new Point(x, y));
+                board.BoardNode[x, y] = new Node((boardLayout.rows[y].row[x]) ? new SpecialType(SpecialType.ESpecialType.LIZA) : GetRandomPieceVal(board), new Point(x, y));
             }
         }
 
@@ -135,7 +136,7 @@ public class BoardController : MonoBehaviour {
 
                     if (!excludeList.Contains(pointVal)) excludeList.Add(pointVal);
 
-                    board.SetValueAtPoint(p, GetNewValue(ref excludeList));
+                    board.SetValueAtPoint(p, GetNewValue(board, ref excludeList));
                 }
             }
         }
@@ -265,7 +266,7 @@ public class BoardController : MonoBehaviour {
                     }
                     else {
                         //if above is top wall or blank create new piece and drop it from the top
-                        NormalType newVal = GetRandomPieceVal();
+                        NormalType newVal = GetRandomPieceVal(board);
                         int[] nearRow = { -2, -1, 1, 2 };
                         var nearValues = new List<INodeType>();
 
@@ -285,7 +286,7 @@ public class BoardController : MonoBehaviour {
 
                         for (int i = 0; i < nearValues.Count - 1; ++i) {
                             if (nearValues[i] == nearValues[i + 1] && nearValues[i] is not BlockedNodeType) {
-                                newVal = GetWeightedRandomPieceVal(nearValues[i] as NormalType);
+                                newVal = GetWeightedRandomPieceVal(board, nearValues[i] as NormalType);
                                 break;
                             }
                         }
@@ -428,8 +429,8 @@ public class BoardController : MonoBehaviour {
                 board.specialUpdateList.Add(pnt);
 
                 while (board.specialUpdateList.Count < 10) {
-                    int randomX = gameController.Random.Next(0, board.Width);
-                    int randomY = gameController.Random.Next(0, board.Height);
+                    int randomX = board.rng.Next(0, board.Width);
+                    int randomY = board.rng.Next(0, board.Height);
 
                     Point newpnt = new Point(randomX, randomY);
 
@@ -650,8 +651,8 @@ public class BoardController : MonoBehaviour {
     /// get random normal piece value
     /// </summary>
     /// <returns>random normal piece (starting with 1)</returns>
-    NormalType GetRandomPieceVal() {
-        int val = gameController.Random.Next(0, 100) / (100 / System.Enum.GetValues(typeof(NormalType.ENormalType)).Length);
+    NormalType GetRandomPieceVal(Board board) {
+        int val = board.rng.Next(0, 100) / (100 / System.Enum.GetValues(typeof(NormalType.ENormalType)).Length);
         return new NormalType((NormalType.ENormalType)val);
     }
 
@@ -660,9 +661,9 @@ public class BoardController : MonoBehaviour {
     /// </summary>
     /// <param name="val">values wishes to be generated more often</param>
     /// <returns>weighted random normal piece type(starting with 1)</returns>
-    NormalType GetWeightedRandomPieceVal(NormalType type) {
+    NormalType GetWeightedRandomPieceVal(Board board, NormalType type) {
         int val = (int)type.TypeVal;
-        if (val < 0 || val > pieces.Length) return GetRandomPieceVal();
+        if (val < 0 || val > pieces.Length) return GetRandomPieceVal(board);
         return new NormalType((NormalType.ENormalType)weightedLists[val - 1].Next());
     }
 
@@ -671,7 +672,7 @@ public class BoardController : MonoBehaviour {
     /// </summary>
     /// <param name="remove">piece type values not wanted to be generated</param>
     /// <returns>new piece type value which is not in remove List</returns>
-    INodeType GetNewValue(ref List<INodeType> remove) {
+    INodeType GetNewValue(Board board, ref List<INodeType> remove) {
         var available = new List<INodeType>();
 
         foreach (int i in System.Enum.GetValues(typeof(NormalType.ENormalType))) {
@@ -682,7 +683,7 @@ public class BoardController : MonoBehaviour {
         foreach (INodeType i in remove) available.Remove(i);
 
         if (available.Count <= 0) return new BlankType();
-        return available[gameController.Random.Next(0, available.Count)];
+        return available[board.rng.Next(0, available.Count)];
     }
 
     /// <summary>
