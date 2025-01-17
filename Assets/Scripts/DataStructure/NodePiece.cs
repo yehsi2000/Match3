@@ -94,9 +94,9 @@ public class NodePiece : MonoBehaviour
     }
 
     void OnMouseDown() {
-        if (!GameController.isClickable) Debug.Log("Cannot click");
+        if (!GameManager.instance.IsClickable) Debug.Log("Cannot click");
 
-        if (updating || !GameController.isClickable) return;
+        if (updating || !GameManager.instance.IsClickable) return;
 
         PieceController.instance.MovePiece(this);
     }

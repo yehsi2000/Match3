@@ -5,7 +5,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class BoardController : MonoBehaviour {
+
+    [SerializeField]
     GameController gameController;
+
+    [SerializeField]
+    ParticleController particleController;
 
     public Sprite[] pieces;
     public Sprite[] specialPieces;
@@ -19,7 +24,7 @@ public class BoardController : MonoBehaviour {
     [SerializeField]
     GameObject killedPiece;
 
-    ParticleController particleController;
+    
     List<WeightedList<int>> weightedLists;
 
     [HideInInspector]
@@ -33,8 +38,8 @@ public class BoardController : MonoBehaviour {
     private void Awake() {
         KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
         NodePiece.onSpecialBlockPress.AddListener(ActivateSpecial);
-        gameController = GetComponent<GameController>();
-        particleController = GetComponent<ParticleController>();
+        //gameController = GetComponent<GameController>();
+        //particleController = GetComponent<ParticleController>();
     }
 
     public void InitBoard(Board board) {
@@ -494,7 +499,7 @@ public class BoardController : MonoBehaviour {
         KilledPiece kPiece = kill.GetComponent<KilledPiece>();
         Vector2 pointPos = board.getPositionFromPoint(p);
         if (bwithParticle || val is SpecialType) {
-            particleController.KillParticle(pointPos, val);
+            particleController.KillParticle(board, pointPos, val);
         }
 
         //if (kPiece != null && val is NormalType && val - 1 < pieces.Length) {

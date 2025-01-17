@@ -5,11 +5,13 @@ using UnityEngine.SceneManagement;
 
 public class GameStartController : MonoBehaviour
 {
+    [SerializeField]
     AudioSource bgmAudio;
+
     public AudioClip[] bgmClips;
     public int bgmIndex;
     private void Start() {
-        bgmAudio = GetComponent<AudioSource>();
+        //bgmAudio = GetComponent<AudioSource>();
         bgmIndex = PlayerPrefs.GetInt("bgm");
         bgmAudio.clip = bgmClips[bgmIndex % bgmClips.Length];
         bgmAudio.Play();
