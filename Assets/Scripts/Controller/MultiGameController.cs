@@ -10,25 +10,23 @@ using UnityEditor;
 public class MultiGameController : MonoBehaviour {
 
     [SerializeField]
-    BoardController boardController;
+    GameManager game;
 
-    [SerializeField]
-    ScoreManager scoreManager;
 
-    [SerializeField]
-    TimerController timerController;
-
-    [SerializeField]
-    AudioController audioController;
-
-    [SerializeField]
-    Board gameBoard;
+    public static readonly int SPECIALBLOCK = 100;
+    //public ArrayLayout boardLayout;
+    public static bool isClickable = true;
 
     [Header("UI Elements")]
+
+
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
     public TMP_Text finalScore;
     public ComboDisplay comboDisplay;
+
+    [Header("Prefabs")]
+
 
     [Header("Score")]
     public int autoBlockWeightMultiplier = 100;
@@ -37,10 +35,11 @@ public class MultiGameController : MonoBehaviour {
     public int match5ExtraScore = 50;
     public int match6plusExtraScore = 100;
 
+
+
     [Header("Time")]
     [SerializeField]
     float clickStopInterval = 0.5f;
-    [SerializeField]
     float clickableTime = 0f;
 
     public float ClickStopInterval {
@@ -65,10 +64,7 @@ public class MultiGameController : MonoBehaviour {
     }
 
     void Awake() {
-        //boardController = GetComponent<BoardController>();
-        //scoreManager = GetComponent<ScoreManager>();
-        //timerController = GetComponent<TimerController>();
-        //audioController = GetComponent<AudioController>();
+        game = GetComponent<GameManager>();
     }
 
     public void Reset() {
@@ -83,13 +79,16 @@ public class MultiGameController : MonoBehaviour {
 
     void Update() {
         //update timer
-        timerController.TimerTick();
+        game.timerController.TimerTick();
 
         //prevent clicking while special block popping
         if (comboTime <= 0) combo = 0;
         else comboTime -= Time.deltaTime;
 
-        boardController.boardUpdate(gameBoard);
+         //TODO
+         //for(int i = 0; i < boards; i++) {
+         //   game.boardController.boardUpdate(boards.manager);
+         //}
 
         PreventClick();
     }
@@ -102,17 +101,17 @@ public class MultiGameController : MonoBehaviour {
         random = new System.Random(seed.GetHashCode());
 
 
-        width = gameBoard.Width;
-        height = gameBoard.Height;
+        width = game.boardManager.Width;
+        height = game.boardManager.Height;
         if (width == 0 || height == 0) {
             throw new System.Exception("Board size is not set");
         }
 
-        scoreManager.Initialize();
+        game.scoreManager.Initialize();
         comboDisplay.Initialize(comboRetainInterval);
         Timer.instance.StartTimer();
 
-        audioController.PlayBGM();
+        game.audioController.PlayBGM();
 
         //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
@@ -124,69 +123,16 @@ public class MultiGameController : MonoBehaviour {
         float _height = bgSpriteRenderer.bounds.size.y;
 
         // set background image to gameboard size
-        bgImageObject.transform.localScale = new Vector3(gameBoard.NodeSize * (width + 1)
-            / _width, gameBoard.NodeSize
+        bgImageObject.transform.localScale = new Vector3(game.boardManager.NodeSize * (width + 1)
+            / _width, game.boardManager.NodeSize
             * (height + 1) / _height, 1);
 
         //loop to get non-matching board
-        boardController.InitBoard(gameBoard);
-    }
-    public void ProcessMatch(Board board, List<Point> connected) {
-        // idx : piece value ,
-        // item1 :piece cnt,
-        // item2 : xpos of last updated piece
-        var matchTypeCnt = new Dictionary<NormalType.ENormalType, ValueTuple<int, int>>();
-
-        //remove the node pieces connected
-        foreach (Point pnt in connected) {
-            Node node = board.GetNodeAtPoint(pnt);
-
-            //if node is normal piece(not special, not hole, not blank)
-            if (node.typeVal is NormalType) {
-                NormalType.ENormalType idx = (node.typeVal as NormalType).TypeVal;
-                if (!matchTypeCnt.TryAdd(idx, new ValueTuple<int, int>(1, pnt.x))) {
-                    matchTypeCnt[idx] = new ValueTuple<int, int>(matchTypeCnt[idx].Item1 + 1, pnt.x);
-                }
-            }
-
-            scoreManager.AddScore(perPieceScore);
-
-            boardController.KillPiece(gameBoard, pnt, true);
-
-            NodePiece nodePiece = node.GetPiece();
-            if (nodePiece != null) Destroy(nodePiece.gameObject);
-            node.SetPiece(null);
-        }
-
-        var matched5list = new List<ValueTuple<SpecialType, int>>();
-
-        foreach (NormalType.ENormalType j in System.Enum.GetValues(typeof(NormalType.ENormalType))) {
-            if (!matchTypeCnt.ContainsKey(j)) continue;
-            if (matchTypeCnt[j].Item1 == 4) {
-                scoreManager.AddScore(match4ExtraScore);
-
-            }
-            else if (matchTypeCnt[j].Item1 == 5) {
-                scoreManager.AddScore(match5ExtraScore);
-
-                //send block's info which matched 5
-                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
-
-            }
-            else if (matchTypeCnt[j].Item1 > 5) {
-                scoreManager.AddScore(match6plusExtraScore);
-
-                //send block's info 5or more matched block is in  line
-                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
-            }
-        }
-
-        Matched();
-        boardController.DropNewPiece(gameBoard, matched5list);
+        //game.boardController.InitBoard();
     }
 
     void PreventClick() {
-        if (clickableTime <= 0) GameManager.instance.IsClickable = true;
+        if (clickableTime <= 0) isClickable = true;
         else clickableTime -= Time.deltaTime;
     }
 
@@ -200,10 +146,10 @@ public class MultiGameController : MonoBehaviour {
         comboDisplay.UpdateCombo(combo);
 
         if (combo % 5 == 0 && combo > 0) {
-            audioController.PlayComboAudio(combo);
+            game.audioController.PlayComboAudio(combo);
         }
-        scoreManager.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
-        audioController.PlayBlockPopAudio();
+        game.scoreManager.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
+        game.audioController.PlayBlockPopAudio();
     }
 
     public void BacktoTitle() {
@@ -211,8 +157,7 @@ public class MultiGameController : MonoBehaviour {
     }
 
     public void SpecialBlockPressed() {
-        scoreManager.AddScore(perPieceScore);
-        GameManager.instance.IsClickable = false;
+        isClickable = false;
         clickableTime = ClickStopInterval;
         Matched();
     }
@@ -226,12 +171,12 @@ public class MultiGameController : MonoBehaviour {
     }
 
     public void GameOver() {
-        boardController.DisableBoards(gameBoard);
+        //game.boardController.DisableBoards();
         gameEndScreen.SetActive(true);
 
-        audioController.Stop();
+        game.audioController.Stop();
 
-        finalScore.text = "Final Score : " + scoreManager;
+        finalScore.text = "Final Score : " + game.scoreManager.Score;
         this.enabled = false;
     }
 }

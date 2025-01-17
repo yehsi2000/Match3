@@ -10,19 +10,15 @@ using UnityEditor;
 public class GameController : MonoBehaviour {
 
     [SerializeField]
+    Board gameBoard;
     BoardController boardController;
-
-    [SerializeField]
     ScoreManager scoreManager;
-
-    [SerializeField]
     TimerController timerController;
-
-    [SerializeField]
     AudioController audioController;
 
-    [SerializeField]
-    Board gameBoard;
+
+    public static readonly int SPECIALBLOCK = 100;
+    public static bool isClickable = true;
 
     [Header("UI Elements")]
     public GameObject gameEndScreen;
@@ -40,7 +36,6 @@ public class GameController : MonoBehaviour {
     [Header("Time")]
     [SerializeField]
     float clickStopInterval = 0.5f;
-    [SerializeField]
     float clickableTime = 0f;
 
     public float ClickStopInterval {
@@ -65,10 +60,10 @@ public class GameController : MonoBehaviour {
     }
 
     void Awake() {
-        //boardController = GetComponent<BoardController>();
-        //scoreManager = GetComponent<ScoreManager>();
-        //timerController = GetComponent<TimerController>();
-        //audioController = GetComponent<AudioController>();
+        boardController = GetComponent<BoardController>();
+        scoreManager = GetComponent<ScoreManager>();
+        timerController = GetComponent<TimerController>();
+        audioController = GetComponent<AudioController>();
     }
 
     public void Reset() {
@@ -186,7 +181,7 @@ public class GameController : MonoBehaviour {
     }
 
     void PreventClick() {
-        if (clickableTime <= 0) GameManager.instance.IsClickable = true;
+        if (clickableTime <= 0) isClickable = true;
         else clickableTime -= Time.deltaTime;
     }
 
@@ -212,7 +207,7 @@ public class GameController : MonoBehaviour {
 
     public void SpecialBlockPressed() {
         scoreManager.AddScore(perPieceScore);
-        GameManager.instance.IsClickable = false;
+        isClickable = false;
         clickableTime = ClickStopInterval;
         Matched();
     }

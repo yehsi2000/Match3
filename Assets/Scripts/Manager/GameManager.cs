@@ -4,29 +4,21 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager instance;
+    public TimerController timerController;
+    public PieceController pieceController;
+    public AudioController audioController;
+    public BoardController boardController;
+    public ParticleController particleController;
+    public GameController gameController;
 
-    [SerializeField]
-    GameController gameController;
+    public Board boardManager;
+    public ScoreManager scoreManager;
 
     private void Awake() {
-        if (instance == null) {
-            instance = this;
-        }
-        else {
-            Destroy(gameObject);
-        }
+        gameController = GetComponent<GameController>();
+        boardManager = GetComponent<Board>();
+        scoreManager = GetComponent<ScoreManager>();
     }
 
-    private bool isClickable = true;
-
-    public bool IsClickable {
-        get { return isClickable; }
-        set { isClickable = value; }
-    }
-
-    public void GameOver() {
-        gameController.GameOver();
-    }
-
+    
 }

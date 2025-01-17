@@ -12,6 +12,9 @@ public class ParticleController : MonoBehaviour {
     List<ParticleSystem> particlePool;
     List<List<ParticleSystem>> specialParticlePool;
 
+    [SerializeField]
+    Board board;
+
     private void Awake() {
     }
 
@@ -26,7 +29,7 @@ public class ParticleController : MonoBehaviour {
         }
     }
 
-    public void KillParticle(Board board, Vector2 pointPos, INodeType val) {
+    public void KillParticle(Vector2 pointPos, INodeType val) {
         List<ParticleSystem> available = new List<ParticleSystem>();
         //special effect
         if (val is SpecialType) {
