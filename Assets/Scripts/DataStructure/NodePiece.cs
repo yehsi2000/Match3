@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class NodePiece : MonoBehaviour
-{
+public class NodePiece : MonoBehaviour {
     [SerializeField]
     INodeType nodeVal;
-    
+
     public INodeType NodeVal {
         get { return nodeVal; }
     }
@@ -29,17 +28,17 @@ public class NodePiece : MonoBehaviour
         get { return nodeSize; }
     }
 
-    public Board GetBoard{
+    public Board GetBoard {
         get { return board; }
     }
 
     float boardWidth;
     float boardHeight;
 
-    static internal UnityEvent<Board, Point, SpecialType> onSpecialBlockPress = 
+    static internal UnityEvent<Board, Point, SpecialType> onSpecialBlockPress =
         new UnityEvent<Board, Point, SpecialType>();
 
-    public void Initialize(INodeType type, Board b, Point p, Sprite piece, float size, float width, float height){
+    public void Initialize(INodeType type, Board b, Point p, Sprite piece, float size, float width, float height) {
         img = GetComponent<SpriteRenderer>();
         board = b;
         nodeSize = size;
@@ -51,34 +50,34 @@ public class NodePiece : MonoBehaviour
         boardHeight = height;
     }
 
-    public void SetIndex(Point p){
+    public void SetIndex(Point p) {
         index = p;
         ResetPosition();
         UpdateName();
     }
 
-    public void ResetPosition(){
+    public void ResetPosition() {
         pos = board.transform.position + new Vector3(
-            nodeSize/2 + (nodeSize * ( index.x - boardWidth / 2f )), 
-            -nodeSize/2 - (nodeSize * ( index.y - boardHeight / 2f ))
+            nodeSize / 2 + (nodeSize * (index.x - boardWidth / 2f)),
+            -nodeSize / 2 - (nodeSize * (index.y - boardHeight / 2f))
             );
     }
 
-    void UpdateName(){
+    void UpdateName() {
         transform.name = "Node [" + index.x + ", " + index.y + "]";
     }
 
-    public void MovePosition(Vector2 move){
-        transform.position += new Vector3(move.x,move.y,0) * Time.deltaTime * moveSpeed;
+    public void MovePosition(Vector2 move) {
+        transform.position += new Vector3(move.x, move.y, 0) * Time.deltaTime * moveSpeed;
     }
 
-    public void MovePositionTo(Vector2 move){
+    public void MovePositionTo(Vector2 move) {
         Debug.Log(move);
         transform.position = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
     }
 
     public bool UpdatePiece() {
-        if(Vector3.Distance(transform.position, pos) > nodeSize / 64f){
+        if (Vector3.Distance(transform.position, pos) > nodeSize / 64f) {
             MovePositionTo(pos);
             updating = true;
             return true;
@@ -95,9 +94,9 @@ public class NodePiece : MonoBehaviour
     }
 
     void OnMouseDown() {
-        if (!GameController.isClickable) Debug.Log("Cannot click");
+        if (!GameManager.instance.IsClickable) Debug.Log("Cannot click");
 
-        if (updating || !GameController.isClickable) return;
+        if (updating || !GameManager.instance.IsClickable) return;
 
         PieceController.instance.MovePiece(this);
     }
@@ -105,7 +104,8 @@ public class NodePiece : MonoBehaviour
     void OnMouseUp() {
         if (nodeVal is SpecialType) {
             onSpecialBlockPress.Invoke(board, index, (nodeVal as SpecialType));
-        } else {
+        }
+        else {
             PieceController.instance.DropPiece(board);
         }
     }

@@ -2,8 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Board : MonoBehaviour
-{
+public class Board : MonoBehaviour {
 
     [SerializeField]
     private int width = 9;
@@ -53,12 +52,12 @@ public class Board : MonoBehaviour
     public int Width {
         get { return width; }
         set {
-            if(value<=0) return;
+            if (value <= 0) return;
             else width = value;
         }
     }
 
-    public int Height{
+    public int Height {
         get { return height; }
         set {
             if (value <= 0) return;
@@ -91,7 +90,7 @@ public class Board : MonoBehaviour
     }
 
     public Vector2 getPositionFromPoint(Point p) {
-        return this.transform.position + new Vector3(NodeSize / 2 + (NodeSize * (p.x - width / 2f)), 
+        return this.transform.position + new Vector3(NodeSize / 2 + (NodeSize * (p.x - width / 2f)),
             -NodeSize / 2 - (NodeSize * (p.y - height / 2f)));
     }
 }

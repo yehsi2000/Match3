@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class GameStartController : MonoBehaviour {
     [SerializeField]
-    [SerializeField]
     AudioSource bgmAudio;
     public AudioClip[] bgmClips;
     public int bgmIndex;

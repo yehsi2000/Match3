@@ -10,25 +10,25 @@ using UnityEditor;
 public class MultiGameController : GameControllerBase {
 
     [SerializeField]
-    GameManager game;
+    BoardController boardController;
 
+    [SerializeField]
+    ScoreManager scoreManager;
 
-    public static readonly int SPECIALBLOCK = 100;
-    //public ArrayLayout boardLayout;
-    public static bool isClickable = true;
+    [SerializeField]
+    TimerController timerController;
 
-    [Header("UI Elements")]
+    [SerializeField]
+    AudioController audioController;
 
     [SerializeField]
     Board[] gameBoards;
 
+    [Header("UI Elements")]
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
     public TMP_Text finalScore;
     public ComboDisplay comboDisplay;
-
-    [Header("Prefabs")]
-
 
     [Header("Score")]
     public int autoBlockWeightMultiplier = 100;
@@ -44,6 +44,7 @@ public class MultiGameController : GameControllerBase {
     [Header("Time")]
     [SerializeField]
     float clickStopInterval = 0.5f;
+    [SerializeField]
     float clickableTime = 0f;
 
     public float ClickStopInterval {
@@ -73,7 +74,7 @@ public class MultiGameController : GameControllerBase {
 
     void Update() {
         //update timer
-        game.timerController.TimerTick();
+        timerController.TimerTick();
 
         //prevent clicking while special block popping
         if (comboTime <= 0) combo = 0;
@@ -90,7 +91,7 @@ public class MultiGameController : GameControllerBase {
     /// </summary>
     public void StartGame() {
         string seed = getRandomSeed();
-        for(int i=0; i< gameBoards.Length; i++) {
+        for (int i = 0; i < gameBoards.Length; i++) {
             gameBoards[i].rng = new System.Random(seed.GetHashCode());
         }
 
@@ -101,11 +102,11 @@ public class MultiGameController : GameControllerBase {
         //    throw new System.Exception("Board size is not set");
         //}
 
-        game.scoreManager.Initialize();
+        scoreManager.Initialize();
         comboDisplay.Initialize(comboRetainInterval);
         Timer.instance.StartTimer();
 
-        game.audioController.PlayBGM();
+        audioController.PlayBGM();
 
         //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
@@ -122,7 +123,7 @@ public class MultiGameController : GameControllerBase {
         //    * (height + 1) / _height, 1);
 
         //loop to get non-matching board
-        foreach(Board gameBoard in gameBoards) {
+        foreach (Board gameBoard in gameBoards) {
             boardController.InitBoard(gameBoard);
         }
     }
@@ -181,7 +182,7 @@ public class MultiGameController : GameControllerBase {
     }
 
     void PreventClick() {
-        if (clickableTime <= 0) isClickable = true;
+        if (clickableTime <= 0) GameManager.instance.IsClickable = true;
         else clickableTime -= Time.deltaTime;
     }
 
@@ -195,10 +196,10 @@ public class MultiGameController : GameControllerBase {
         comboDisplay.UpdateCombo(combo);
 
         if (combo % 5 == 0 && combo > 0) {
-            game.audioController.PlayComboAudio(combo);
+            audioController.PlayComboAudio(combo);
         }
-        game.scoreManager.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
-        game.audioController.PlayBlockPopAudio();
+        scoreManager.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
+        audioController.PlayBlockPopAudio();
     }
 
     public void BacktoTitle() {
@@ -220,15 +221,15 @@ public class MultiGameController : GameControllerBase {
         return seed;
     }
 
-    public void GameOver() {
+    public override void GameOver() {
         foreach (Board gameBoard in gameBoards)
             boardController.DisableBoards(gameBoard);
 
         gameEndScreen.SetActive(true);
 
-        game.audioController.Stop();
+        audioController.Stop();
 
-        finalScore.text = "Final Score : " + game.scoreManager.Score;
+        finalScore.text = "Final Score : " + scoreManager;
         this.enabled = false;
     }
 }

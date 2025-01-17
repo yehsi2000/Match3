@@ -216,7 +216,7 @@ public class SingleGameController : GameControllerBase {
         return seed;
     }
 
-    public virtual void GameOver() {
+    public override void GameOver() {
         boardController.DisableBoards(gameBoard);
         gameEndScreen.SetActive(true);
 

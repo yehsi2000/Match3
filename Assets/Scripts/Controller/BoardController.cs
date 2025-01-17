@@ -9,6 +9,9 @@ public class BoardController : MonoBehaviour {
     [SerializeField]
     GameControllerBase gameController;
 
+    [SerializeField]
+    ParticleController particleController;
+
     public Sprite[] pieces;
     public Sprite[] specialPieces;
     public ArrayLayout boardLayout;
@@ -21,7 +24,7 @@ public class BoardController : MonoBehaviour {
     [SerializeField]
     GameObject killedPiece;
 
-    ParticleController particleController;
+
     List<WeightedList<int>> weightedLists;
 
     [HideInInspector]
@@ -35,8 +38,8 @@ public class BoardController : MonoBehaviour {
     private void Awake() {
         KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
         NodePiece.onSpecialBlockPress.AddListener(ActivateSpecial);
-        gameController = GetComponent<GameController>();
-        particleController = GetComponent<ParticleController>();
+        //gameController = GetComponent<GameController>();
+        //particleController = GetComponent<ParticleController>();
     }
 
     public void InitBoard(Board board) {
@@ -57,8 +60,7 @@ public class BoardController : MonoBehaviour {
         } while (isDeadlocked(board));
     }
 
-    public void boardUpdate(Board board)
-    {
+    public void boardUpdate(Board board) {
         //update moving pieces and store it for flip check
         var finishedUpdating = new List<NodePiece>();
 
@@ -170,7 +172,7 @@ public class BoardController : MonoBehaviour {
                         board.Width,
                         board.Height);
                 }
-                else if(node.typeVal is NormalType) {
+                else if (node.typeVal is NormalType) {
                     piece.Initialize(node.typeVal,
                         board,
                         new Point(x, y), pieces[(int)(node.typeVal as NormalType).TypeVal],
@@ -188,7 +190,7 @@ public class BoardController : MonoBehaviour {
         boardManager.KilledBoard.SetActive(false);
     }
 
-    
+
 
     void CheckMoveMatched(Board board, ref List<NodePiece> finishedUpdating) {
         for (int i = 0; i < finishedUpdating.Count; i++) {
@@ -226,7 +228,7 @@ public class BoardController : MonoBehaviour {
     }
 
 
-    
+
 
 
     /// <summary>
@@ -358,7 +360,7 @@ public class BoardController : MonoBehaviour {
                 Node node = board.GetNodeAtPoint(board.specialUpdateList[i]);
                 NodePiece nodePiece = node.GetPiece();
 
-                
+
 
                 if (nodePiece != null) {
                     Destroy(nodePiece.gameObject);
@@ -495,7 +497,7 @@ public class BoardController : MonoBehaviour {
         KilledPiece kPiece = kill.GetComponent<KilledPiece>();
         Vector2 pointPos = board.getPositionFromPoint(p);
         if (bwithParticle || val is SpecialType) {
-            particleController.KillParticle(pointPos, val);
+            particleController.KillParticle(board, pointPos, val);
         }
 
         //if (kPiece != null && val is NormalType && val - 1 < pieces.Length) {

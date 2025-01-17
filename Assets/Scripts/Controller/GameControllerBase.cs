@@ -8,5 +8,5 @@ public class GameControllerBase : MonoBehaviour {
 
     public virtual void SpecialBlockPressed() { }
     public virtual void ProcessMatch(Board board, List<Point> connected) { }
-
+    public virtual void GameOver() { }
 }
