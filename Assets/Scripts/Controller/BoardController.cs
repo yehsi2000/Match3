@@ -190,8 +190,6 @@ public class BoardController : MonoBehaviour {
         boardManager.KilledBoard.SetActive(false);
     }
 
-
-
     void CheckMoveMatched(Board board, ref List<NodePiece> finishedUpdating) {
         for (int i = 0; i < finishedUpdating.Count; i++) {
 
@@ -211,6 +209,7 @@ public class BoardController : MonoBehaviour {
             if (wasFlipped) {
                 flippedPiece = flip.GetOtherPiece(piece);
                 AddPoints(ref connected, FindConnected(board, flippedPiece.index, true));
+                if (board.IsPlayerBoard) Network.instance.SendFlip(piece, flippedPiece);
             }
 
             if (connected.Count == 0) {

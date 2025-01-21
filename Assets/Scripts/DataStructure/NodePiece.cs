@@ -72,7 +72,6 @@ public class NodePiece : MonoBehaviour {
     }
 
     public void MovePositionTo(Vector2 move) {
-        Debug.Log(move);
         transform.position = Vector2.Lerp(transform.position, move, Time.deltaTime * moveSpeed);
     }
 
@@ -96,12 +95,13 @@ public class NodePiece : MonoBehaviour {
     void OnMouseDown() {
         if (!GameManager.instance.IsClickable) Debug.Log("Cannot click");
 
-        if (updating || !GameManager.instance.IsClickable) return;
+        if (!board.IsPlayerBoard || updating || !GameManager.instance.IsClickable) return;
 
         PieceController.instance.MovePiece(this);
     }
 
     void OnMouseUp() {
+        if (!board.IsPlayerBoard) return;
         if (nodeVal is SpecialType) {
             onSpecialBlockPress.Invoke(board, index, (nodeVal as SpecialType));
         }

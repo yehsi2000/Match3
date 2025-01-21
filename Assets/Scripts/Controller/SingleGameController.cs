@@ -6,7 +6,6 @@ using UnityEngine.SceneManagement;
 using KaimiraGames;
 using UnityEditor;
 
-[InitializeOnLoad]
 public class SingleGameController : GameControllerBase {
 
     [SerializeField]

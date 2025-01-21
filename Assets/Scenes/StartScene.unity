@@ -681,7 +681,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1843417767}
+      - m_Target: {fileID: 1843417770}
         m_TargetAssemblyTypeName: GameStartController, Assembly-CSharp
         m_MethodName: NextBGM
         m_Mode: 1
@@ -3210,7 +3210,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1843417767}
+      - m_Target: {fileID: 1843417770}
         m_TargetAssemblyTypeName: GameStartController, Assembly-CSharp
         m_MethodName: StartGame
         m_Mode: 1
@@ -3613,8 +3613,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1843417768}
-  - component: {fileID: 1843417767}
   - component: {fileID: 1843417769}
+  - component: {fileID: 1843417770}
   m_Layer: 0
   m_Name: _StartGameController
   m_TagString: Untagged
@@ -3622,23 +3622,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1843417767
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843417766}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cbb080fb6b0fe9d42b96d5b2c9042712, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bgmClips:
-  - {fileID: 8300000, guid: 9538306f4b0f5044e9b803dcfc561597, type: 3}
-  - {fileID: 8300000, guid: f9fa18d8bbb233b4e9108ed7edd9da35, type: 3}
-  - {fileID: 8300000, guid: b496926a00f9b534f9e85c16640b584c, type: 3}
-  bgmIndex: 0
 --- !u!4 &1843417768
 Transform:
   m_ObjectHideFlags: 0
@@ -3750,6 +3733,24 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1843417770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843417766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbdab6788c72f3f4da50a9621ee1474a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bgmAudio: {fileID: 1843417769}
+  bgmClips:
+  - {fileID: 8300000, guid: 4c80679da1e24ef469e641cf820e0f66, type: 3}
+  - {fileID: 8300000, guid: 5c43eda6d46db2d48b4c7ba8fa03faa7, type: 3}
+  - {fileID: 8300000, guid: 80743320e2fb9bd41887b77c9b899712, type: 3}
+  bgmIndex: 0
 --- !u!1 &1923635449
 GameObject:
   m_ObjectHideFlags: 0

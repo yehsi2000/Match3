@@ -16,7 +16,7 @@ public class GameStartController : MonoBehaviour {
     }
     public void StartGame()
     {
-        SceneManager.LoadScene("SingleGameScene");
+        SceneManager.LoadScene("MultiGameScene");
     }
 
     public void NextBGM() {

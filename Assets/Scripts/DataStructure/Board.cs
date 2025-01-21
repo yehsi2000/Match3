@@ -17,6 +17,13 @@ public class Board : MonoBehaviour {
     public BoardController boardController;
 
     [SerializeField]
+    bool isPlayerBoard = false;
+
+    public bool IsPlayerBoard {
+        get { return isPlayerBoard; }
+    }
+
+    [SerializeField]
     GameObject gameBoard;
 
     [SerializeField]

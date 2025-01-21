@@ -6,7 +6,6 @@ using UnityEngine.SceneManagement;
 using KaimiraGames;
 using UnityEditor;
 
-[InitializeOnLoad]
 public class MultiGameController : GameControllerBase {
 
     [SerializeField]
@@ -84,6 +83,12 @@ public class MultiGameController : GameControllerBase {
             boardController.boardUpdate(gameBoard);
         }
         PreventClick();
+        if (Network.instance.isConnected) {
+            if (Network.instance.packetQueue.Count > 0) {
+                SwapPacket packet = Network.instance.packetQueue.Dequeue();
+                ProcessFlip(gameBoards[1], packet);
+            }
+        }
     }
 
     /// <summary>
@@ -179,6 +184,19 @@ public class MultiGameController : GameControllerBase {
 
         Matched();
         boardController.DropNewPiece(board, matched5list);
+    }
+
+    void ProcessFlip(Board board, SwapPacket packet) {
+        Debug.Log($"Flip {packet.x1} {packet.y1} with {packet.x2} {packet.y2}");
+        Node selected = board.GetNodeAtPoint(new Point(packet.x1, packet.y1));
+        Node flipped = board.GetNodeAtPoint(new Point(packet.x2, packet.y2));
+        if (selected != null && flipped != null) {
+            if (selected.GetPiece() != null && flipped.GetPiece() != null) {
+                //selected.GetPiece().MovePositionTo(flipped.GetPiece().transform.position);
+                //flipped.GetPiece().MovePositionTo(selected.GetPiece().transform.position);
+                boardController.FlipPieces(board, new Point(packet.x1, packet.y1), new Point(packet.x2, packet.y2), true);
+            }
+        }
     }
 
     void PreventClick() {
