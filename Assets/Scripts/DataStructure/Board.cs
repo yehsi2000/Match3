@@ -11,16 +11,20 @@ public class Board : MonoBehaviour {
     private int height = 14;
 
     [SerializeField]
-    private readonly float nodeSize = 2f;
-
-    [SerializeField]
     public BoardController boardController;
 
     [SerializeField]
     bool isPlayerBoard = false;
 
+    [SerializeField]
+    bool isMultiplayer = false;
+
     public bool IsPlayerBoard {
         get { return isPlayerBoard; }
+    }
+
+    public bool IsMultiplayer {
+        get { return isMultiplayer; }
     }
 
     [SerializeField]
@@ -29,19 +33,34 @@ public class Board : MonoBehaviour {
     [SerializeField]
     GameObject killedBoard;
 
-    public List<NodePiece> updateList;
-    public List<Point> specialUpdateList;
-    public List<FlippedPieces> flippedList;
-    public List<KilledPiece> killedPieceList;
-
-    public System.Random rng;
-
-    public float NodeSize {
-        get { return nodeSize; }
-    }
+    [HideInInspector]
+    public LinkedList<NodePiece> updateList;
 
     [HideInInspector]
+    public LinkedList<Point> specialUpdateList;
+
+    [HideInInspector]
+    public LinkedList<FlippedPieces> flippedList;
+
+    [HideInInspector]
+    public List<KilledPiece> killedPieceList;
+
+    public CustomRandom rng;
+
+    public GameObject bgImageObject;
+
     public Node[,] boardNode;
+
+    public class SpecialActivationInfo {
+        public SpecialActivationInfo(Point p, SpecialType t) {
+            pnt = p;
+            type = t;
+        }
+        public Point pnt;
+        public SpecialType type;
+    }
+
+    public Queue<SpecialActivationInfo> specialActivationQueue;
 
     public GameObject GameBoard {
         get { return gameBoard; }
@@ -72,11 +91,33 @@ public class Board : MonoBehaviour {
         }
     }
 
+    public int RngNext(int a, int b) {
+        int val = rng.Next(a, b);
+        
+        //Debug.Log($"{rng.GetHashCode()} {gameObject.name} 's val {val}");
+        return val;
+    }
+
     void Awake() {
-        updateList = new List<NodePiece>();
-        specialUpdateList = new List<Point>();
-        flippedList = new List<FlippedPieces>();
+        updateList = new LinkedList<NodePiece>();
+        specialUpdateList = new LinkedList<Point>();
+        flippedList = new LinkedList<FlippedPieces>();
         killedPieceList = new List<KilledPiece>();
+        specialActivationQueue = new Queue<SpecialActivationInfo> ();
+    }
+
+    private void Start() {
+        // set sprite image background to camera size, currently not used
+        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
+
+        float _width = bgSpriteRenderer.bounds.size.x;
+        float _height = bgSpriteRenderer.bounds.size.y;
+
+        // set background image to gameboard size
+        bgImageObject.transform.localScale = new Vector3(boardController.NodeSize * (width + 1)
+            / _width, boardController.NodeSize
+            * (height + 1) / _height, 1);
+        bgImageObject.transform.position = gameObject.transform.position;
     }
 
     public Node GetNodeAtPoint(Point p) {
@@ -97,7 +138,7 @@ public class Board : MonoBehaviour {
     }
 
     public Vector2 getPositionFromPoint(Point p) {
-        return this.transform.position + new Vector3(NodeSize / 2 + (NodeSize * (p.x - width / 2f)),
-            -NodeSize / 2 - (NodeSize * (p.y - height / 2f)));
+        return this.transform.position + new Vector3(boardController.NodeSize / 2 + (boardController.NodeSize * (p.x - width / 2f)),
+            -boardController.NodeSize / 2 - (boardController.NodeSize * (p.y - height / 2f)));
     }
 }

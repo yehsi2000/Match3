@@ -5,25 +5,12 @@ using UnityEngine.SceneManagement;
 
 public class GameStartController : MonoBehaviour {
     [SerializeField]
-    AudioSource bgmAudio;
-    public AudioClip[] bgmClips;
+    AudioController audiocontroller;
     public int bgmIndex;
     private void Start() {
-        bgmAudio = GetComponent<AudioSource>();
-        bgmIndex = PlayerPrefs.GetInt("bgm");
-        bgmAudio.clip = bgmClips[bgmIndex % bgmClips.Length];
-        bgmAudio.Play();
+        audiocontroller.PlayBGM();
     }
-    public void StartGame()
-    {
-        SceneManager.LoadScene("MultiGameScene");
-    }
-
-    public void NextBGM() {
-        bgmIndex++;
-        bgmIndex %= bgmClips.Length;
-        PlayerPrefs.SetInt("bgm", bgmIndex);
-        bgmAudio.clip = bgmClips[bgmIndex % bgmClips.Length];
-        bgmAudio.Play();
+    public void StartGame() {
+        SceneManager.LoadScene("ModeSelectionScene");
     }
 }

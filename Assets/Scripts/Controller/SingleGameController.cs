@@ -25,7 +25,6 @@ public class SingleGameController : GameControllerBase {
 
     [Header("UI Elements")]
     public GameObject gameEndScreen;
-    public GameObject bgImageObject;
     public TMP_Text finalScore;
     public ComboDisplay comboDisplay;
 
@@ -72,8 +71,6 @@ public class SingleGameController : GameControllerBase {
     }
 
     protected virtual void Update() {
-        //update timer
-        timerController.TimerTick();
 
         //prevent clicking while special block popping
         if (comboTime <= 0) combo = 0;
@@ -89,8 +86,7 @@ public class SingleGameController : GameControllerBase {
     /// </summary>
     public virtual void StartGame() {
         string seed = getRandomSeed();
-        gameBoard.rng = new System.Random(seed.GetHashCode());
-        
+        gameBoard.rng = new CustomRandom(seed.GetHashCode());
 
         width = gameBoard.Width;
         height = gameBoard.Height;
@@ -100,28 +96,20 @@ public class SingleGameController : GameControllerBase {
 
         scoreManager.Initialize();
         comboDisplay.Initialize(comboRetainInterval);
-        Timer.instance.StartTimer();
+        timerController.StartTimer();
 
         audioController.PlayBGM();
 
         //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
         //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
 
-        // set sprite image background to camera size, currently not used
-        SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
-
-        float _width = bgSpriteRenderer.bounds.size.x;
-        float _height = bgSpriteRenderer.bounds.size.y;
-
-        // set background image to gameboard size
-        bgImageObject.transform.localScale = new Vector3(gameBoard.NodeSize * (width + 1)
-            / _width, gameBoard.NodeSize
-            * (height + 1) / _height, 1);
+        
+        
 
         //loop to get non-matching board
         boardController.InitBoard(gameBoard);
     }
-    public override void ProcessMatch(Board board, List<Point> connected) {
+    public override LinkedList<ValueTuple<SpecialType, int>> ProcessMatch(Board board, List<Point> connected) {
         // idx : piece value ,
         // item1 :piece cnt,
         // item2 : xpos of last updated piece
@@ -148,7 +136,7 @@ public class SingleGameController : GameControllerBase {
             node.SetPiece(null);
         }
 
-        var matched5list = new List<ValueTuple<SpecialType, int>>();
+        var matched5list = new LinkedList<ValueTuple<SpecialType, int>>();
 
         foreach (NormalType.ENormalType j in System.Enum.GetValues(typeof(NormalType.ENormalType))) {
             if (!matchTypeCnt.ContainsKey(j)) continue;
@@ -160,19 +148,20 @@ public class SingleGameController : GameControllerBase {
                 scoreManager.AddScore(match5ExtraScore);
 
                 //send block's info which matched 5
-                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
+                matched5list.AddLast(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
 
             }
             else if (matchTypeCnt[j].Item1 > 5) {
                 scoreManager.AddScore(match6plusExtraScore);
 
                 //send block's info 5or more matched block is in  line
-                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
+                matched5list.AddLast(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
             }
         }
 
         Matched();
-        boardController.DropNewPiece(board, matched5list);
+        //boardController.DropNewPiece(board, matched5list);
+        return matched5list;
     }
 
     protected void PreventClick() {
@@ -200,7 +189,7 @@ public class SingleGameController : GameControllerBase {
         SceneManager.LoadScene("StartScene");
     }
 
-    public override void SpecialBlockPressed() {
+    public override void SpecialBlockPressed(Board board) {
         scoreManager.AddScore(perPieceScore);
         GameManager.instance.IsClickable = false;
         clickableTime = ClickStopInterval;
@@ -221,7 +210,7 @@ public class SingleGameController : GameControllerBase {
 
         audioController.Stop();
 
-        finalScore.text = "Final Score : " + scoreManager;
+        finalScore.text = "Final Score : " + scoreManager.Score;
         this.enabled = false;
     }
 }

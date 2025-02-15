@@ -4,15 +4,17 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using KaimiraGames;
-using UnityEditor;
 
 public class MultiGameController : GameControllerBase {
+    public struct SwapPacket {
+        public int x1;
+        public int y1;
+        public int x2;
+        public int y2;
+    }
 
     [SerializeField]
     BoardController boardController;
-
-    [SerializeField]
-    ScoreManager scoreManager;
 
     [SerializeField]
     TimerController timerController;
@@ -26,6 +28,8 @@ public class MultiGameController : GameControllerBase {
     [Header("UI Elements")]
     public GameObject gameEndScreen;
     public GameObject bgImageObject;
+    public TMP_Text myIdText;
+    public TMP_Text opIdText;
     public TMP_Text finalScore;
     public ComboDisplay comboDisplay;
 
@@ -46,12 +50,30 @@ public class MultiGameController : GameControllerBase {
     [SerializeField]
     float clickableTime = 0f;
 
+    [Header("Network")]
+    string opponentId;
+    static int randomSeed = int.MaxValue;
+    public bool isReady = false;
+    public bool isOpponentReady = false;
+    public Queue<SwapPacket> packetQueue;
+    bool hasEnded;
+    bool hasOpEnded;
+
+    public string OpponentId {
+        set { if (opponentId == null) opponentId = value; }
+    }
+
+    public int RandomSeed {
+        get { return randomSeed; }
+        set { if (value <= randomSeed) randomSeed = value; }
+    }
+
     public float ClickStopInterval {
         get { return clickStopInterval; }
     }
 
     [SerializeField]
-    float comboRetainInterval = 1.5f;
+    float comboRetainInterval = 2f;
 
     int width;
     int height;
@@ -61,20 +83,25 @@ public class MultiGameController : GameControllerBase {
 
     float comboTime = 0f;
 
-    public void Reset() {
+
+    void Reset() {
         StartGame();
         gameEndScreen.SetActive(false);
     }
 
     void Start() {
-        StartGame();
+        packetQueue = new Queue<SwapPacket>();
         gameEndScreen.SetActive(false);
     }
 
     void Update() {
-        //update timer
-        timerController.TimerTick();
+        if (!isReady || !isOpponentReady) return;
 
+        if (packetQueue.Count > 0) {
+            //Debug.Log("packet count : " + packetQueue.Count);
+            SwapPacket packet = packetQueue.Dequeue();
+            ProcessFlip(gameBoards[1], packet);
+        }
         //prevent clicking while special block popping
         if (comboTime <= 0) combo = 0;
         else comboTime -= Time.deltaTime;
@@ -83,38 +110,28 @@ public class MultiGameController : GameControllerBase {
             boardController.boardUpdate(gameBoard);
         }
         PreventClick();
-        if (Network.instance.isConnected) {
-            if (Network.instance.packetQueue.Count > 0) {
-                SwapPacket packet = Network.instance.packetQueue.Dequeue();
-                ProcessFlip(gameBoards[1], packet);
-            }
-        }
+
+
     }
 
     /// <summary>
     /// Initialize game variable and set components
     /// </summary>
     public void StartGame() {
-        string seed = getRandomSeed();
+        Debug.Log("start game with seed " + randomSeed);
+        //TODO : 3초세고 시작
+
         for (int i = 0; i < gameBoards.Length; i++) {
-            gameBoards[i].rng = new System.Random(seed.GetHashCode());
+            gameBoards[i].rng = new CustomRandom(randomSeed);
         }
 
-
-        //width = gameBoard.Width;
-        //height = gameBoard.Height;
-        //if (width == 0 || height == 0) {
-        //    throw new System.Exception("Board size is not set");
-        //}
-
-        scoreManager.Initialize();
+        ScoreManager.instance.Initialize();
         comboDisplay.Initialize(comboRetainInterval);
-        Timer.instance.StartTimer();
+        timerController.StartTimer();
+        myIdText.text = PlayerPrefs.GetString("myid", "Player1");
+        opIdText.text = opponentId;
 
         audioController.PlayBGM();
-
-        //gameBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
-        //killedBoard.GetComponent<RectTransform>().sizeDelta = new Vector2(nodeSize*width, nodeSize*height);
 
         // set sprite image background to camera size, currently not used
         SpriteRenderer bgSpriteRenderer = bgImageObject.GetComponent<SpriteRenderer>();
@@ -122,21 +139,18 @@ public class MultiGameController : GameControllerBase {
         float _width = bgSpriteRenderer.bounds.size.x;
         float _height = bgSpriteRenderer.bounds.size.y;
 
-        // set background image to gameboard size
-        //bgImageObject.transform.localScale = new Vector3(gameBoard.NodeSize * (width + 1)
-        //    / _width, gameBoard.NodeSize
-        //    * (height + 1) / _height, 1);
-
         //loop to get non-matching board
         foreach (Board gameBoard in gameBoards) {
             boardController.InitBoard(gameBoard);
         }
     }
-    public override void ProcessMatch(Board board, List<Point> connected) {
+    public override LinkedList<ValueTuple<SpecialType, int>> ProcessMatch(Board board, List<Point> connected) {
+        //Debug.Log("ProcessMatch");
         // idx : piece value ,
         // item1 :piece cnt,
         // item2 : xpos of last updated piece
         var matchTypeCnt = new Dictionary<NormalType.ENormalType, ValueTuple<int, int>>();
+        var matched5list = new LinkedList<ValueTuple<SpecialType, int>>();
 
         //remove the node pieces connected
         foreach (Point pnt in connected) {
@@ -150,40 +164,45 @@ public class MultiGameController : GameControllerBase {
                 }
             }
 
-            scoreManager.AddScore(perPieceScore);
+            if (board.IsPlayerBoard) ScoreManager.instance.AddScore(perPieceScore);
 
             boardController.KillPiece(board, pnt, true);
 
             NodePiece nodePiece = node.GetPiece();
-            if (nodePiece != null) Destroy(nodePiece.gameObject);
-            node.SetPiece(null);
-        }
 
-        var matched5list = new List<ValueTuple<SpecialType, int>>();
+
+            if (nodePiece != null) {
+                Destroy(nodePiece.gameObject);
+                //Debug.Log($"Destroy : {nodePiece.index.x}:{nodePiece.index.y}");
+                node.SetPiece(null);
+            }
+
+        }
 
         foreach (NormalType.ENormalType j in System.Enum.GetValues(typeof(NormalType.ENormalType))) {
             if (!matchTypeCnt.ContainsKey(j)) continue;
             if (matchTypeCnt[j].Item1 == 4) {
-                scoreManager.AddScore(match4ExtraScore);
+                if (board.IsPlayerBoard) ScoreManager.instance.AddScore(match4ExtraScore);
 
             }
             else if (matchTypeCnt[j].Item1 == 5) {
-                scoreManager.AddScore(match5ExtraScore);
+                if (board.IsPlayerBoard) ScoreManager.instance.AddScore(match5ExtraScore);
 
                 //send block's info which matched 5
-                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
+                matched5list.AddLast(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
 
             }
             else if (matchTypeCnt[j].Item1 > 5) {
-                scoreManager.AddScore(match6plusExtraScore);
+                if (board.IsPlayerBoard) ScoreManager.instance.AddScore(match6plusExtraScore);
 
                 //send block's info 5or more matched block is in  line
-                matched5list.Add(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
+                matched5list.AddLast(new ValueTuple<SpecialType, int>(new SpecialType((SpecialType.ESpecialType)j), matchTypeCnt[j].Item2));
             }
         }
 
-        Matched();
-        boardController.DropNewPiece(board, matched5list);
+        Matched(board);
+        //boardController.DropNewPiece(board, matched5list);
+        return matched5list;
     }
 
     void ProcessFlip(Board board, SwapPacket packet) {
@@ -208,7 +227,9 @@ public class MultiGameController : GameControllerBase {
     /// Increment Combo and perform related jobs like sfx, score, combo
     /// </summary>
 
-    public void Matched() {
+    public void Matched(Board board) {
+        if (!board.IsPlayerBoard) return;
+
         combo++;
         comboTime = comboRetainInterval;
         comboDisplay.UpdateCombo(combo);
@@ -216,27 +237,32 @@ public class MultiGameController : GameControllerBase {
         if (combo % 5 == 0 && combo > 0) {
             audioController.PlayComboAudio(combo);
         }
-        scoreManager.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
+        ScoreManager.instance.AddScore(Math.Clamp((combo / 5), 0, 6) * perPieceScore);
         audioController.PlayBlockPopAudio();
     }
 
     public void BacktoTitle() {
+        if (FindObjectOfType<SignalingClient>() != null) {
+            Destroy(FindObjectOfType<SignalingClient>().gameObject);
+        }
+        if (Network.instance != null) {
+            Destroy(Network.instance.gameObject);
+            Network.instance = null;
+        }
         SceneManager.LoadScene("StartScene");
     }
 
-    public override void SpecialBlockPressed() {
-        scoreManager.AddScore(perPieceScore);
-        GameManager.instance.IsClickable = false;
-        clickableTime = ClickStopInterval;
-        Matched();
+    public void ReceiveSpecialPress(Point pnt, SpecialType type) {
+        //Debug.Log("Special Pressed received");
+        boardController.AddSpecialQueue(gameBoards[1], pnt, type);
     }
 
-    string getRandomSeed() {
-        string seed = "";
-        string acceptableChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789!@#$%^&*()";
-        for (int i = 0; i < 20; i++)
-            seed += acceptableChars[UnityEngine.Random.Range(0, acceptableChars.Length)];
-        return seed;
+    public override void SpecialBlockPressed(Board board) {
+        if (!board.IsPlayerBoard) return;
+        ScoreManager.instance.AddScore(perPieceScore);
+        GameManager.instance.IsClickable = false;
+        clickableTime = ClickStopInterval;
+        Matched(board);
     }
 
     public override void GameOver() {
@@ -247,7 +273,19 @@ public class MultiGameController : GameControllerBase {
 
         audioController.Stop();
 
-        finalScore.text = "Final Score : " + scoreManager;
-        this.enabled = false;
+        FinalScoreTextUpdate(true);
+
+        Network.instance.SendGameOver(ScoreManager.instance.Score);
+        //this.enabled = false;
+    }
+    public void FinalScoreTextUpdate(bool self) {
+
+        if (self) hasEnded = true;
+        else hasOpEnded = true;
+
+        if (hasEnded && hasOpEnded) finalScore.text =
+                $"Your Score : {ScoreManager.instance.Score}\n " +
+                $"Opponent Score : {ScoreManager.instance.OpScore}\n " +
+                $"YOU {(ScoreManager.instance.Score > ScoreManager.instance.OpScore ? "WON" : "LOST")}";
     }
 }

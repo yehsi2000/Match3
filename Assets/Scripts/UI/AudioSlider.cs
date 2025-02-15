@@ -7,7 +7,6 @@ public class AudioSlider : MonoBehaviour
 {
     [SerializeField]
     private bool isSFX;
-    private RectTransform rect;
 
     // Start is called before the first frame update
     public void ToggleVisibility() {

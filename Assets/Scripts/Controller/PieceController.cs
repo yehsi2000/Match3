@@ -48,12 +48,17 @@ public class PieceController : MonoBehaviour {
     }
 
     public void DropPiece(Board board) {
-        bool isOpponentMoving = board.BoardNode[newIndex.x, newIndex.y].GetPiece().GetUpdateState();
-        if (moving == null) return;
-        if (!newIndex.Equals(moving.index) && !isOpponentMoving)
-            board.boardController.FlipPieces(board, moving.index, newIndex, true);
-        else
-            board.boardController.ResetPiece(board, moving);
-        moving = null;
+        NodePiece otherPiece = board.BoardNode[newIndex.x, newIndex.y].GetPiece();
+        if (otherPiece != null && moving != null) {
+            bool isOpponentMoving = otherPiece.GetUpdateState();
+            if (!newIndex.Equals(moving.index) && !isOpponentMoving) {
+                board.boardController.FlipPieces(board, moving.index, newIndex, true);
+                if (board.IsMultiplayer && board.IsPlayerBoard) Network.instance.SendFlip(moving, otherPiece);
+            }
+
+            else
+                board.boardController.ResetPiece(board, moving);
+            moving = null;
+        }
     }
 }

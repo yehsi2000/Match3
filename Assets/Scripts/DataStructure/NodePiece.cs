@@ -35,10 +35,11 @@ public class NodePiece : MonoBehaviour {
     float boardWidth;
     float boardHeight;
 
-    static internal UnityEvent<Board, Point, SpecialType> onSpecialBlockPress =
-        new UnityEvent<Board, Point, SpecialType>();
+    static internal UnityEvent<Board, Point, SpecialType, bool> onSpecialBlockPress =
+        new UnityEvent<Board, Point, SpecialType, bool>();
 
     public void Initialize(INodeType type, Board b, Point p, Sprite piece, float size, float width, float height) {
+        //Debug.Log($"piece {type.ToString()} at Point {p.x}:{p.y}");
         img = GetComponent<SpriteRenderer>();
         board = b;
         nodeSize = size;
@@ -48,6 +49,7 @@ public class NodePiece : MonoBehaviour {
         transform.localScale = new Vector3(size / 2.5f, size / 2.5f, 1);
         boardWidth = width;
         boardHeight = height;
+        updating = false;
     }
 
     public void SetIndex(Point p) {
@@ -76,7 +78,7 @@ public class NodePiece : MonoBehaviour {
     }
 
     public bool UpdatePiece() {
-        if (Vector3.Distance(transform.position, pos) > nodeSize / 64f) {
+        if (Vector3.Distance(transform.position, pos) > nodeSize / 32f) {
             MovePositionTo(pos);
             updating = true;
             return true;
@@ -93,7 +95,7 @@ public class NodePiece : MonoBehaviour {
     }
 
     void OnMouseDown() {
-        if (!GameManager.instance.IsClickable) Debug.Log("Cannot click");
+        //if (!GameManager.instance.IsClickable) Debug.Log("Cannot click");
 
         if (!board.IsPlayerBoard || updating || !GameManager.instance.IsClickable) return;
 
@@ -103,7 +105,7 @@ public class NodePiece : MonoBehaviour {
     void OnMouseUp() {
         if (!board.IsPlayerBoard) return;
         if (nodeVal is SpecialType) {
-            onSpecialBlockPress.Invoke(board, index, (nodeVal as SpecialType));
+            onSpecialBlockPress.Invoke(board, index, (nodeVal as SpecialType), false);
         }
         else {
             PieceController.instance.DropPiece(board);

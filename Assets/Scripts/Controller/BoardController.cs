@@ -2,6 +2,8 @@ using KaimiraGames;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 
 public class BoardController : MonoBehaviour {
@@ -24,6 +26,13 @@ public class BoardController : MonoBehaviour {
     [SerializeField]
     GameObject killedPiece;
 
+    [SerializeField]
+    private float nodeSize = 2f;
+
+    public float NodeSize {
+        get { return nodeSize; }
+    }
+
 
     List<WeightedList<int>> weightedLists;
 
@@ -37,7 +46,7 @@ public class BoardController : MonoBehaviour {
 
     private void Awake() {
         KilledPiece.onKilledPieceRemove.AddListener(KilledPieceRemoved);
-        NodePiece.onSpecialBlockPress.AddListener(ActivateSpecial);
+        NodePiece.onSpecialBlockPress.AddListener(AddSpecialQueue);
         //gameController = GetComponent<GameController>();
         //particleController = GetComponent<ParticleController>();
     }
@@ -64,16 +73,49 @@ public class BoardController : MonoBehaviour {
         //update moving pieces and store it for flip check
         var finishedUpdating = new List<NodePiece>();
 
-        for (int i = 0; i < board.updateList.Count; i++) {
-            NodePiece piece = board.updateList[i];
-            if (piece != null && !piece.UpdatePiece()) finishedUpdating.Add(piece);
+        bool updatedone = true;
+        foreach (var piece in board.updateList) {
+            if (piece != null) {
+                if (piece.UpdatePiece()) {
+                    updatedone = false;
+                } else {
+                    finishedUpdating.Add(piece);
+                }
+                //Debug.Log($"still updating {piece.index.x}:{piece.index.y}");
+            }
         }
 
-        //Update for special block activation
-        SpecialBlockTick(board);
+        if (updatedone) {
+            //if (finishedUpdating.Count > 0) {
+            //    StringBuilder stringBuilder = new StringBuilder();
+            //    stringBuilder.Append("finishedupdating : ");
+            //    foreach (var piece in finishedUpdating) {
+            //        stringBuilder.Append($"{piece.index.x}:{piece.index.y}, ");
+            //    }
+            //    Debug.Log(stringBuilder.ToString());
+            //}
+            //if (board.updateList.Count > 0) {
+            //    StringBuilder stringBuilder = new StringBuilder();
+            //    stringBuilder.Append("board.updateList : ");
+            //    foreach (var piece in board.updateList) {
+            //        stringBuilder.Append($"{piece.index.x}:{piece.index.y}, ");
+            //    }
+            //    Debug.Log(stringBuilder.ToString());
+            //}
 
-        //check if flipped pieces could make a match, else revert flip
-        CheckMoveMatched(board, ref finishedUpdating);
+            //check if flipped pieces could make a match, else revert flip
+            CheckMoveMatched(board, ref finishedUpdating);
+
+            if (board.specialActivationQueue.Count > 0) {
+                Board.SpecialActivationInfo actinfo = board.specialActivationQueue.Dequeue();
+                ActivateSpecial(board, actinfo.pnt, actinfo.type);
+            }
+
+            //Update for special block activation
+            SpecialBlockTick(board);
+
+            
+        }
     }
 
     /// <summary>
@@ -85,7 +127,7 @@ public class BoardController : MonoBehaviour {
 
         for (int y = 0; y < board.Height; y++) {
             for (int x = 0; x < board.Width; x++) {
-                board.BoardNode[x, y] = new Node((boardLayout.rows[y].row[x]) ? new SpecialType(SpecialType.ESpecialType.LIZA) : GetRandomPieceVal(board), new Point(x, y));
+                board.BoardNode[x, y] = new Node((boardLayout.rows[y].row[x]) ? new SpecialType(SpecialType.ESpecialType.LIZASP) : GetRandomPieceVal(board), new Point(x, y));
             }
         }
 
@@ -161,14 +203,14 @@ public class BoardController : MonoBehaviour {
                 //RectTransform rect = p.GetComponent<RectTransform>();
 
                 p.transform.localPosition = new Vector3(
-                    board.NodeSize / 2 + (board.NodeSize * (x - board.Width / 2f)),
-                    -board.NodeSize / 2 - (board.NodeSize * (y - board.Height / 2f))
+                    nodeSize / 2 + (nodeSize * (x - board.Width / 2f)),
+                    -nodeSize / 2 - (nodeSize * (y - board.Height / 2f))
                     );
                 if (node.typeVal is SpecialType) {
                     piece.Initialize(node.typeVal,
                         board,
                         new Point(x, y), specialPieces[(int)(node.typeVal as SpecialType).TypeVal],
-                        board.NodeSize,
+                        nodeSize,
                         board.Width,
                         board.Height);
                 }
@@ -176,7 +218,7 @@ public class BoardController : MonoBehaviour {
                     piece.Initialize(node.typeVal,
                         board,
                         new Point(x, y), pieces[(int)(node.typeVal as NormalType).TypeVal],
-                        board.NodeSize,
+                        nodeSize,
                         board.Width,
                         board.Height);
                 }
@@ -191,6 +233,16 @@ public class BoardController : MonoBehaviour {
     }
 
     void CheckMoveMatched(Board board, ref List<NodePiece> finishedUpdating) {
+        //if (finishedUpdating.Count > 0) {
+        //    StringBuilder stringBuilder = new StringBuilder();
+        //    stringBuilder.Append("CheckMoveMatched finished : ");
+        //    foreach (var piece in finishedUpdating) {
+        //        stringBuilder.Append($"{piece.index.x}:{piece.index.y}, ");
+        //    }
+        //    Debug.Log(stringBuilder.ToString());
+        //}
+        var specialDropList = new LinkedList<ValueTuple<SpecialType, int>>();
+        bool updated = finishedUpdating.Count>0;
         for (int i = 0; i < finishedUpdating.Count; i++) {
 
             NodePiece piece = finishedUpdating[i]; //updated piece
@@ -209,7 +261,7 @@ public class BoardController : MonoBehaviour {
             if (wasFlipped) {
                 flippedPiece = flip.GetOtherPiece(piece);
                 AddPoints(ref connected, FindConnected(board, flippedPiece.index, true));
-                if (board.IsPlayerBoard) Network.instance.SendFlip(piece, flippedPiece);
+                //if (board.IsMultiplayer && board.IsPlayerBoard) Network.instance.SendFlip(piece, flippedPiece);
             }
 
             if (connected.Count == 0) {
@@ -218,12 +270,15 @@ public class BoardController : MonoBehaviour {
             }
             else {
                 //made a match
-                gameController.ProcessMatch(board, connected);
+                foreach (var e in gameController.ProcessMatch(board, connected)) {
+                    specialDropList.AddLast(e);
+                }
             }
 
             board.flippedList.Remove(flip); //remove the flip after update
             board.updateList.Remove(piece); //done updating the piece
         }
+        if(updated) DropNewPiece(board, specialDropList);
     }
 
 
@@ -235,7 +290,15 @@ public class BoardController : MonoBehaviour {
     /// </summary>
     /// <param name="specialBlockList">List of infos of special block to generate. Tuple(specialblock type, speical generate xval)</param>
 
-    public void DropNewPiece(Board board, List<ValueTuple<SpecialType, int>> specialBlockList = null) {
+    public void DropNewPiece(Board board, LinkedList<ValueTuple<SpecialType, int>> specialBlockList = null) {
+        //if (specialBlockList != null && specialBlockList.Count>0) {
+        //    StringBuilder sb = new StringBuilder();
+        //    sb.Append("specialblocklist : ");
+        //    foreach (var piece in specialBlockList) {
+        //        sb.Append($"{piece.Item1.ToString()}:{piece.Item2}, ");
+        //    }
+        //    Debug.Log(sb.ToString());
+        //}
         for (int x = 0; x < board.Width; x++) {
             for (int y = board.Height - 1; y >= 0; y--) {
 
@@ -261,17 +324,17 @@ public class BoardController : MonoBehaviour {
 
                         //Set the blank to upper piece
                         curNode.SetPiece(upperPiece);
-                        board.updateList.Add(upperPiece);
+                        board.updateList.AddLast(upperPiece);
 
                         upperNode.SetPiece(null); //Replace the upper piece to blank
                     }
                     else {
                         //if above is top wall or blank create new piece and drop it from the top
-                        NormalType newVal = GetRandomPieceVal(board);
-                        int[] nearRow = { -2, -1, 1, 2 };
+                        NormalType newNormalType = GetRandomPieceVal(board);
+                        int[] nearColumn = { -2, -1, 1, 2 };
                         var nearValues = new List<INodeType>();
 
-                        foreach (int diff in nearRow) {
+                        foreach (int diff in nearColumn) {
                             if (x + diff >= board.Width ||
                                 x + diff < 0 ||
                                 y + blockSpawnOffset[x] < 0 ||
@@ -287,7 +350,7 @@ public class BoardController : MonoBehaviour {
 
                         for (int i = 0; i < nearValues.Count - 1; ++i) {
                             if (nearValues[i] == nearValues[i + 1] && nearValues[i] is not BlockedNodeType) {
-                                newVal = GetWeightedRandomPieceVal(board, nearValues[i] as NormalType);
+                                newNormalType = GetWeightedRandomPieceVal(board, nearValues[i] as NormalType);
                                 break;
                             }
                         }
@@ -300,37 +363,36 @@ public class BoardController : MonoBehaviour {
                         NodePiece piece = obj.GetComponent<NodePiece>();
 
                         if (specialBlockList != null && specialBlockList.Count > 0) {
-                            for (int i = 0; i < specialBlockList.Count; ++i) {
-                                if (specialBlockList[i].Item2 == x) {
-                                    piece.Initialize(specialBlockList[i].Item1,
+                            foreach (ValueTuple<SpecialType, int> specialblock in specialBlockList) {
+                                if (specialblock.Item2 == x) {
+                                    piece.Initialize(specialblock.Item1,
                                         board,
                                         curPoint,
-                                        specialPieces[(int)specialBlockList[i].Item1.TypeVal],
-                                        board.NodeSize,
+                                        specialPieces[(int)specialblock.Item1.TypeVal],
+                                        nodeSize,
                                         board.Width,
                                         board.Height);
 
-                                    specialBlockList.RemoveAt(i);
+                                    specialBlockList.Remove(specialblock);
                                     break;
-
                                 }
                                 else {
-                                    piece.Initialize(newVal,
+                                    piece.Initialize(newNormalType,
                                         board,
                                         curPoint,
-                                        pieces[(int)(newVal as NormalType).TypeVal],
-                                        board.NodeSize,
+                                        pieces[(int)newNormalType.TypeVal],
+                                        nodeSize,
                                         board.Width,
                                         board.Height);
                                 }
                             }
                         }
                         else {
-                            piece.Initialize(newVal,
+                            piece.Initialize(newNormalType,
                                 board,
                                 curPoint,
-                                pieces[(int)newVal.TypeVal],
-                                board.NodeSize,
+                                pieces[(int)newNormalType.TypeVal],
+                                nodeSize,
                                 board.Width,
                                 board.Height);
                         }
@@ -352,25 +414,42 @@ public class BoardController : MonoBehaviour {
     }
 
     void SpecialBlockTick(Board board) {
-        if (board.specialUpdateList.Count > 0) {
-            for (int i = 0; i < board.specialUpdateList.Count; ++i) {
-                KillPiece(board, board.specialUpdateList[i], false);
+        if (board.specialUpdateList.Count == 0) return;
+        //Debug.Log("SpecialBlockTick");
+        //for (int i = 0; i < board.specialUpdateList.Count; ++i) {
+        //    KillPiece(board, board.specialUpdateList[i], false);
 
-                Node node = board.GetNodeAtPoint(board.specialUpdateList[i]);
-                NodePiece nodePiece = node.GetPiece();
+        //    Node node = board.GetNodeAtPoint(board.specialUpdateList[i]);
+        //    NodePiece nodePiece = node.GetPiece();
 
+        //    if (nodePiece != null) {
+        //        Destroy(nodePiece.gameObject);
+        //    }
+        //    node.SetPiece(null);
+        //}
+        var specialUpdateListCopy = new List<Point>(board.specialUpdateList);
+        foreach(var point in specialUpdateListCopy) {
+            KillPiece(board, point, false);
 
+            Node node = board.GetNodeAtPoint(point);
+            NodePiece nodePiece = node.GetPiece();
 
-                if (nodePiece != null) {
-                    Destroy(nodePiece.gameObject);
-                }
-                node.SetPiece(null);
+            if (nodePiece != null) {
+                //Debug.Log($"Sp Destroy : {nodePiece.index.x}:{nodePiece.index.y}");
+                Destroy(nodePiece.gameObject);
             }
-
-            DropNewPiece(board);
-            board.specialUpdateList.Clear();
-            gameController.SpecialBlockPressed();
+            node.SetPiece(null);
         }
+
+        DropNewPiece(board);
+        board.specialUpdateList.Clear();
+        gameController.SpecialBlockPressed(board);
+    }
+
+    public void AddSpecialQueue(Board board, Point pnt, SpecialType type, bool collateral=false) {
+        board.specialActivationQueue.Enqueue(new Board.SpecialActivationInfo(pnt, type));
+        //Debug.Log($"SpecialQ Added {pnt.x}:{pnt.y} type:{type.TypeVal}");
+        if (board.IsPlayerBoard && Network.instance != null && !collateral) Network.instance.SendSpecialPressed(pnt, type);
     }
 
     /// <summary>
@@ -378,60 +457,72 @@ public class BoardController : MonoBehaviour {
     /// </summary>
     /// <param name="pnt">Special block position index</param>
     /// <param name="val">Special block type 0 ~ </param>
-    void ActivateSpecial(Board board, Point pnt, SpecialType val) {
+    public void ActivateSpecial(Board board, Point pnt, SpecialType val) {
         if (val == null) return;
+        //Debug.Log($"activate special {pnt.x}:{pnt.y} on {val.TypeVal.ToString()}");
+        KillPiece(board, pnt, false, true);
+        Node n = board.GetNodeAtPoint(pnt);
+        NodePiece np = n.GetPiece();
+        if (np != null) {
+            Destroy(np.gameObject);
+        }
+        n.SetPiece(null);
+
         switch (val.TypeVal) {
-            case SpecialType.ESpecialType.SITRI:
+            case SpecialType.ESpecialType.SITRISP:
                 for (int i = 0; i < board.Width; ++i) {
                     for (int j = 0; j < board.Height; ++j) {
-                        board.specialUpdateList.Add(new Point(i, j));
+                        if(pnt.x!=i && pnt.y!=j) //
+                            board.specialUpdateList.AddLast(new Point(i, j));
                     }
                 }
                 break;
 
-            case SpecialType.ESpecialType.DAVI:
-                board.specialUpdateList.Add(pnt);
+            case SpecialType.ESpecialType.DAVISP:
+                //board.specialUpdateList.AddLast(pnt);
 
                 for (int i = 1; i <= Math.Max(board.Height, board.Width); i++) {
                     Point[] dir = { new Point(1, -1), new Point(1, 1), new Point(-1, 1), new Point(-1, -1) };
                     foreach (Point p in dir) {
                         Point toAdd = Point.add(pnt, Point.mult(p, i));
                         if (toAdd.x >= 0 && toAdd.x < board.Width && toAdd.y >= 0 && toAdd.y < board.Height) {
-                            board.specialUpdateList.Add(toAdd);
+                            board.specialUpdateList.AddLast(toAdd);
                         }
                     }
                 }
                 break;
 
-            case SpecialType.ESpecialType.LIZA:
+            case SpecialType.ESpecialType.LIZASP:
                 for (int i = 0; i < board.Width; ++i) {
-                    board.specialUpdateList.Add(new Point(i, pnt.y));
+                    if (i == pnt.x) continue; //
+                    board.specialUpdateList.AddLast(new Point(i, pnt.y));
                 }
 
                 for (int i = 0; i < board.Height; ++i) {
-                    if (i == pnt.y) continue; //prevent dual update for pressed
-                    board.specialUpdateList.Add(new Point(pnt.x, i));
+                    if (i == pnt.y) continue;
+                    board.specialUpdateList.AddLast(new Point(pnt.x, i));
                 }
                 break;
 
-            case SpecialType.ESpecialType.MONA:
+            case SpecialType.ESpecialType.MONASP:
                 for (int i = -2; i <= 2; ++i) {
                     for (int j = -2; j <= 2; ++j) {
+                        if(i==0 && j==0) continue; //
                         Point toAdd = Point.add(pnt, new Point(i, j));
 
                         if (toAdd.x >= 0 && toAdd.x < board.Width && toAdd.y >= 0 && toAdd.y < board.Height) {
-                            board.specialUpdateList.Add(toAdd);
+                            board.specialUpdateList.AddLast(toAdd);
                         }
                     }
                 }
                 break;
 
-            case SpecialType.ESpecialType.UMBRELLA:
-                board.specialUpdateList.Add(pnt);
+            case SpecialType.ESpecialType.MITRASP:
+                //board.specialUpdateList.AddLast(pnt);
 
                 while (board.specialUpdateList.Count < 10) {
-                    int randomX = board.rng.Next(0, board.Width);
-                    int randomY = board.rng.Next(0, board.Height);
+                    int randomX = board.RngNext(0, board.Width);
+                    int randomY = board.RngNext(0, board.Height);
 
                     Point newpnt = new Point(randomX, randomY);
 
@@ -441,12 +532,12 @@ public class BoardController : MonoBehaviour {
                     NodePiece nodePiece = newnode.GetPiece();
                     if (nodePiece == null || nodePiece.NodeVal is SpecialType) continue;
 
-                    board.specialUpdateList.Add(newpnt);
+                    board.specialUpdateList.AddLast(newpnt);
                 }
                 break;
 
-            case SpecialType.ESpecialType.WOOKONG:
-                board.specialUpdateList.Add(pnt);
+            case SpecialType.ESpecialType.SANGASP:
+                //board.specialUpdateList.AddLast(pnt);
                 for (int i = 0; i < board.Width; ++i) {
                     for (int j = 0; j < board.Height; ++j) {
                         Node node = board.GetNodeAtPoint(new Point(i, j));
@@ -456,7 +547,7 @@ public class BoardController : MonoBehaviour {
 
                             if (piece != null && piece.NodeVal is NormalType
                                 && piece.NodeVal.isEqual(new NormalType(NormalType.ENormalType.SANGA))) {
-                                board.specialUpdateList.Add(new Point(i, j));
+                                board.specialUpdateList.AddLast(new Point(i, j));
                             }
                         }
                     }
@@ -473,9 +564,15 @@ public class BoardController : MonoBehaviour {
     FlippedPieces GetFlipped(Board board, NodePiece p) {
         FlippedPieces flip = null;
 
-        for (int i = 0; i < board.flippedList.Count; i++) {
-            if (board.flippedList[i].GetOtherPiece(p) != null) {
-                flip = board.flippedList[i];
+        //for (int i = 0; i < board.flippedList.Count; i++) {
+        //    if (board.flippedList[i].GetOtherPiece(p) != null) {
+        //        flip = board.flippedList[i];
+        //        break;
+        //    }
+        //}
+        foreach(var piece in board.flippedList) {
+            if (piece.GetOtherPiece(p) != null) {
+                flip = piece;
                 break;
             }
         }
@@ -487,7 +584,7 @@ public class BoardController : MonoBehaviour {
     /// Doesn't really kill piece. Instantiates killpiece prefabs in killboard and make explosion effect on popped pieces
     /// </summary>
     /// <param name="p">Piece which is killed and to be dropped</param>
-    public void KillPiece(Board board, Point p, bool bwithParticle) {
+    public void KillPiece(Board board, Point p, bool bwithParticle, bool specialTrigger=false) {
         INodeType val = board.GetValueAtPoint(p);
 
         if (val is BlockedNodeType || val is BlankType) return;
@@ -501,13 +598,16 @@ public class BoardController : MonoBehaviour {
 
         //if (kPiece != null && val is NormalType && val - 1 < pieces.Length) {
         if (kPiece != null && val is NormalType) {
-            kPiece.Initialize(board, pieces[(int)(val as NormalType).TypeVal], pointPos, board.NodeSize);
+            kPiece.Initialize(board, pieces[(int)(val as NormalType).TypeVal], pointPos, nodeSize);
             board.killedPieceList.Add(kPiece);
             //} else if (kPiece != null && val < specialPieces.Length) {
         }
         else if (kPiece != null && val is SpecialType) {
-            kPiece.Initialize(board, specialPieces[(int)(val as SpecialType).TypeVal], pointPos, board.NodeSize);
-            ActivateSpecial(board, p, (val as SpecialType));
+            kPiece.Initialize(board, specialPieces[(int)(val as SpecialType).TypeVal], pointPos, nodeSize);
+            if(!specialTrigger) {
+                //Debug.Log($"collateral sp trigger {p.x}:{p.y} on {(val as SpecialType).TypeVal}");
+                AddSpecialQueue(board, p, (val as SpecialType), true);
+            }
             board.killedPieceList.Add(kPiece);
         }
     }
@@ -532,10 +632,10 @@ public class BoardController : MonoBehaviour {
             nodeOne.SetPiece(pieceTwo);
             nodeTwo.SetPiece(pieceOne);
 
-            if (main) board.flippedList.Add(new FlippedPieces(pieceOne, pieceTwo));
+            if (main) board.flippedList.AddLast(new FlippedPieces(pieceOne, pieceTwo));
 
-            board.updateList.Add(pieceOne);
-            board.updateList.Add(pieceTwo);
+            board.updateList.AddLast(pieceOne);
+            board.updateList.AddLast(pieceTwo);
         }
         else {
             ResetPiece(board, pieceOne); //second one's hole, reset first one's position
@@ -606,6 +706,10 @@ public class BoardController : MonoBehaviour {
                 int additional_match = AddPoints(ref connected, more);
             }
         }
+        //Debug.Log($"connect check : {p.x}:{p.y}");
+        //foreach (Point pnt in connected) {
+        //    Debug.Log($"{pnt.x}:{pnt.y}");
+        //}
         return connected;
 
     }
@@ -645,7 +749,7 @@ public class BoardController : MonoBehaviour {
     /// <param name="piece">node to reset position</param>
     public void ResetPiece(Board board, NodePiece piece) {
         piece.ResetPosition();
-        board.updateList.Add(piece);
+        board.updateList.AddLast(piece);
     }
 
     /// <summary>
@@ -653,7 +757,8 @@ public class BoardController : MonoBehaviour {
     /// </summary>
     /// <returns>random normal piece (starting with 1)</returns>
     NormalType GetRandomPieceVal(Board board) {
-        int val = board.rng.Next(0, 100) / (100 / System.Enum.GetValues(typeof(NormalType.ENormalType)).Length);
+        int val = board.RngNext(0, 100) / (100 / System.Enum.GetValues(typeof(NormalType.ENormalType)).Length);
+        //Debug.Log("random piece:" + val);
         return new NormalType((NormalType.ENormalType)val);
     }
 
@@ -664,8 +769,12 @@ public class BoardController : MonoBehaviour {
     /// <returns>weighted random normal piece type(starting with 1)</returns>
     NormalType GetWeightedRandomPieceVal(Board board, NormalType type) {
         int val = (int)type.TypeVal;
-        if (val < 0 || val > pieces.Length) return GetRandomPieceVal(board);
-        return new NormalType((NormalType.ENormalType)weightedLists[val - 1].Next());
+        if (val < 0 || val > pieces.Length) {
+            return GetRandomPieceVal(board);
+        }
+        int weightedval = weightedLists[val - 1].Next();
+        Debug.Log("weighted random piece:" + val);
+        return new NormalType((NormalType.ENormalType)weightedval);
     }
 
     /// <summary>
@@ -684,7 +793,7 @@ public class BoardController : MonoBehaviour {
         foreach (INodeType i in remove) available.Remove(i);
 
         if (available.Count <= 0) return new BlankType();
-        return available[board.rng.Next(0, available.Count)];
+        return available[board.RngNext(0, available.Count)];
     }
 
     /// <summary>

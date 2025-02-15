@@ -16,6 +16,9 @@ public class BlockedNodeType : INodeType {
             return false;
         }
     }
+    override public string ToString() {
+        return "BlockedType";
+    }
 }
 
 public class BlankType : INodeType {
@@ -28,6 +31,9 @@ public class BlankType : INodeType {
         } else {
             return false;
         }
+    }
+    override public string ToString() {
+        return "BlankType";
     }
 }
 
@@ -55,6 +61,10 @@ public class NormalType : INodeType {
         get { return typeval; }
     }
 
+    override public string ToString() {
+        return TypeVal.ToString();
+    }
+
     public bool isEqual(INodeType node) {
         if (node is NormalType) {
             NormalType normal = node as NormalType;
@@ -72,12 +82,12 @@ public class SpecialType : INodeType {
     }
 
     public enum ESpecialType {
-        DAVI=0,
-        LIZA=1,
-        MONA=2,
-        UMBRELLA=3,
-        WOOKONG=4,
-        SITRI = 100,
+        DAVISP=0,
+        LIZASP=1,
+        MONASP=2,
+        MITRASP=3,
+        SANGASP=4,
+        SITRISP = 100,
     }
 
     private ESpecialType typeval;
@@ -93,5 +103,8 @@ public class SpecialType : INodeType {
         } else {
             return false;
         }
+    }
+    override public string ToString() {
+        return TypeVal.ToString();
     }
 }

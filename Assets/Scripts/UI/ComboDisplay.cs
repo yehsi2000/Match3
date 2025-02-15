@@ -7,7 +7,7 @@ public class ComboDisplay : MonoBehaviour
 {
     TMP_Text comboText;
     float displayTime;
-    float comboDisplayTime = 1f;
+    float comboDisplayTime = 2f;
     // Start is called before the first frame update
     void Awake()
     {
