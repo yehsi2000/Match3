@@ -37,12 +37,14 @@ Removes all ![상아5](https://github.com/user-attachments/assets/5cf6f81d-f640-
 
 
 # To Be Added
-- Online multiplay
 - Scoreboard
 - Boss Raid
 
 # Try game online
 http://zekiddo.iptime.org:1144/
+
+# Used Asset
+- GUIPackCartoon
 
 # Contributes
 Music generated from Suno by alwayspengwin777
