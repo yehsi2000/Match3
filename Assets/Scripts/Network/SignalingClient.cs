@@ -53,7 +53,7 @@ public class SignalingClient : MonoBehaviour {
         await websocket.Connect();
         if (websocket.State == WebSocketState.Open) Debug.Log("WebSocket connected!");
         websocket.OnMessage += (bytes) => {
-            // ¼ö½ÅÇÑ ¸Þ½ÃÁö Ã³¸®
+            // ìˆ˜ì‹ í•œ ë©”ì‹œì§€ ì²˜ë¦¬
             HandleMessage(bytes);
         };
         websocket.OnClose += (e) => { Debug.Log("WebSocket closed : " + e); };
@@ -143,43 +143,7 @@ public class SignalingClient : MonoBehaviour {
 
     void HandleMessage(byte[] bytes) {
         string message = System.Text.Encoding.UTF8.GetString(bytes).Trim();
-        //Debug.Log("Message received: " + message);
-        if (message.StartsWith("$connect")) {
-            string connectRes = message.Substring(message.IndexOf(":") + 1);
-            myID = connectRes;
-            return;
-        }
-        else if (message.StartsWith("$ready")) {
-            string seed = message.Substring(message.IndexOf(":") + 1);
-            if (Int32.TryParse(seed, out int res))
-                PlayerPrefs.SetInt("rngseed",res);
-        }
-        else if (message.StartsWith("$error")) {
-            string errorMsg = message.Substring(message.IndexOf(":") + 1);
-            targetID = "";
-            targetIdInput.text = "";
-            ErrorAlert(errorMsg);
-            return;
-        }
-        
-        var json = JsonUtility.FromJson<SignalingMessage>(message);
-        //Debug.Log($"targetid:{json.targetId}, type:{json.type}, sdp:{json.sdp}, candidate:{json.candidate}");
-
-        if (json.type.Equals("offer")) {
-            Debug.Log("targetID="+targetID);
-            if (targetID == null || targetID.Length == 0) targetID = json.targetId;
-            Debug.Log("Received offer: " + json.sdp);
-            OnReceiveOffer(json.sdp);
-        }
-        else if (json.type == "answer") {
-            Debug.Log("Received Answer: " + json.sdp);
-            OnReceiveAnswer(json.sdp);
-        }
-        else if (json.type == "candidate") {
-            var candidateInit = JsonUtility.FromJson<SerializableRTCIceCandidateInit>(json.candidate);
-            int sdpindex = candidateInit.sdpMLineIndex ?? 0;
-            OnReceiveIceCandidate(candidateInit.candidate, candidateInit.sdpMid, sdpindex, candidateInit.usernameFragment);
-        }
+        HandleMessage(message);
     }
 
     public void SendOffer(string sdp) {
@@ -207,7 +171,7 @@ public class SignalingClient : MonoBehaviour {
     }
 
     public void OnConnectionSuccess() {
-        //TODO : ¿¬°á¼º°ø ¸Þ¼¼Áö
+        //TODO : ì—°ê²°ì„±ê³µ ë©”ì„¸ì§€
         isConnected = true;
     }
 
