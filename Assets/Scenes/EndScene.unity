@@ -401,7 +401,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 34d22bb2a37d009498a0a2bc4e853eae, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 893ed2625072b8a41ae46e4700ad505f, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -446,7 +446,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 951057380}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ada8616bda72854b83316a4b29c0655, type: 3}
+  m_Script: {fileID: 11500000, guid: bea716df16d8b7d4ea1c2e424970c1c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   boardLayout:
@@ -473,8 +473,8 @@ MonoBehaviour:
   gameEndScreen: {fileID: 906328925}
   scoreBoard: {fileID: 0}
   timer: {fileID: 0}
-  nodePiece: {fileID: 2245527992543366604, guid: 6d1f174933d553843aa65f94449f1f4d, type: 3}
-  killedPiece: {fileID: 3808634555857249372, guid: d71b84b7cf5668f499d7b372a059f046, type: 3}
+  nodePiece: {fileID: 2245527992543366604, guid: 808303ec0790de54daf570c812dfdb58, type: 3}
+  killedPiece: {fileID: 3808634555857249372, guid: 1ac8c8aba3f1cf24597a1cc3dcbc1f4f, type: 3}
   score: 0
   perPieceScore: 100
 --- !u!4 &951057382

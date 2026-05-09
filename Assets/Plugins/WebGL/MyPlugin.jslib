@@ -15,7 +15,7 @@ var MyPlugin = {
         ws.addEventListener("open", function(event){
         });
         ws.addEventListener("message", function(event){
-            MyGameInstance.SendMessage('SigClient', 'HandleMessage', event.data);
+            SendMessage('SigClient', 'HandleMessage', event.data);
         });
         peerConnection.addEventListener('icecandidate', event => {
             if (event.candidate) {
@@ -24,7 +24,7 @@ var MyPlugin = {
                     sdpMid : event.candidate.sdpMid, 
                     sdpMLineIndex : event.candidate.sdpMLineIndex,
                     usernameFragment : event.candidate.usernameFragment};
-                MyGameInstance.SendMessage('SigClient', 'SendIceCandidate', JSON.stringify(candidate));
+                SendMessage('SigClient', 'SendIceCandidate', JSON.stringify(candidate));
             }
         });
 
@@ -32,7 +32,7 @@ var MyPlugin = {
             console.log(event);
             if (peerConnection.connectionState === 'connected') {
                 //window.alert("Connection Successful!");
-                MyGameInstance.SendMessage('SigClient', 'OnConnectionSuccess');
+                SendMessage('SigClient', 'OnConnectionSuccess');
             }
         });
 
@@ -42,21 +42,21 @@ var MyPlugin = {
 
         dataChannel.addEventListener('open', event => {
             console.log("Data Channel open!");
-            MyGameInstance.SendMessage('SigClient', 'OnDataChannelOpen');
+            SendMessage('SigClient', 'OnDataChannelOpen');
         });
         
         dataChannel.addEventListener('message', event => {
             const message = event.data;
             //console.log(message);
             //window.alert("Data received: " + message);
-            MyGameInstance.SendMessage('Network', 'HandleDataStream', message);
+            SendMessage('Network', 'HandleDataStream', message);
         });
 
     },
     makeCall : async function(){
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
-        MyGameInstance.SendMessage('SigClient', 'SendOffer', offer.sdp);
+        SendMessage('SigClient', 'SendOffer', offer.sdp);
     },
     OnReceiveOffer : async function(offer){
         let offerstr = UTF8ToString(offer);
@@ -65,7 +65,7 @@ var MyPlugin = {
         peerConnection.setRemoteDescription(new RTCSessionDescription({type:"offer",sdp:offerstr}));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        MyGameInstance.SendMessage('SigClient', 'SendAnswer', answer.sdp);
+        SendMessage('SigClient', 'SendAnswer', answer.sdp);
     },
     OnReceiveAnswer : async function(answer){
         peerConnection.setRemoteDescription(new RTCSessionDescription({type:"answer",sdp:UTF8ToString(answer)}));
