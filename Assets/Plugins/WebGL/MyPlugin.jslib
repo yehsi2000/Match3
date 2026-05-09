@@ -8,12 +8,14 @@ var MyPlugin = {
         ws.send(message);
     },
     GetServerAddress : function(){
-        console.log("@@window location hostname", window.location.hostname);
-        let hostname = window.location.hostname.toString();
-        console.log("@@host", hostname);
-        let bufferSize = lengthBytesUTF8(hostname) + 1;
+        let host = window.location.hostname;
+        let protocol = window.location.protocol === "https" ? "wss:" : "ws:";
+        let wsUrl = protocol + "//" + host + "/matchsig";
+        console.log("@websocket url : ", wsUrl);
+        if(host == 'localhost') wsUrl = 'ws://zekiddo.iptime.org:9090';
+        let bufferSize = lengthBytesUTF8(wsUrl) + 1;
         let buffer = _malloc(bufferSize);
-        stringToUTF8(hostname, buffer, bufferSize);
+        stringToUTF8(wsUrl, buffer, bufferSize);
         return buffer;
     },
     Init : function(){

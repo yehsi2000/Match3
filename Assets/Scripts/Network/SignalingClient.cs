@@ -50,12 +50,13 @@ public class SignalingClient : MonoBehaviour {
         DontDestroyOnLoad(gameObject);
         isConnected = false;
         Init();
-        string serverAddress = GetServerAddress();
-        if(string.IsNullOrEmpty(serverAddress)) {
-            Debug.Log("Using fallback server address");
-            serverAddress = "zekiddo.iptime.org";
-        }
-        websocket = new WebSocket($"ws://{serverAddress}:9090");
+        // string serverAddress = GetServerAddress();
+        // if(string.IsNullOrEmpty(serverAddress)) {
+        //     Debug.Log("Using fallback server address");
+        //     serverAddress = "zekiddo.iptime.org";
+        // }
+        // websocket = new WebSocket($"ws://{serverAddress}:9090");
+        websocket = new WebSocket(GetServerAddress());
         await websocket.Connect();
         if (websocket.State == WebSocketState.Open) Debug.Log("WebSocket connected!");
         websocket.OnMessage += (bytes) => {
