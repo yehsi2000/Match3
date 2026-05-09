@@ -7,6 +7,15 @@ var MyPlugin = {
     SendWS : function(message){
         ws.send(message);
     },
+    GetServerAddress : function(){
+        console.log("@@window location hostname", window.location.hostname);
+        let hostname = window.location.hostname.toString();
+        console.log("@@host", hostname);
+        let bufferSize = lengthBytesUTF8(hostname) + 1;
+        let buffer = _malloc(bufferSize);
+        stringToUTF8(hostname, buffer, bufferSize);
+        return buffer;
+    },
     Init : function(){
         const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]}
         peerConnection = new RTCPeerConnection(configuration);

@@ -103,6 +103,17 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
-      # (이곳에 SSH로 서버에 접속해서 docker-compose up -d 를 실행하는 스크립트가 들어갑니다)
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: 
+            cd ~/dev/match3deploy
+            docker-compose pull
+            docker-compose up -d
+            docker image prune -f
       - name: Deploy to Server
         run: echo "배포 완료"
