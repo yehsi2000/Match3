@@ -14,9 +14,9 @@ public class AudioSlider : MonoBehaviour
         if (gameObject.activeSelf) {
             Slider slider = this.GetComponent<Slider>();
             if (isSFX) {
-                slider.value = PlayerPrefs.GetFloat("sfx_volume", 1);
+                slider.value = PlayerPrefs.GetFloat("sfx_volume", 0.3f);
             } else {
-                slider.value = PlayerPrefs.GetFloat("volume", 1);
+                slider.value = PlayerPrefs.GetFloat("volume", 0.3f);
             }
         }
     }
