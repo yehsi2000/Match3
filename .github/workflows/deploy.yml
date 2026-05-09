@@ -48,7 +48,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webgl-build  # 이 이름표를 붙여서 깃허브 서버에 올려둡니다.
-          path: build  # 업로드할 폴더 경로
+          path: build/WebGL  # 업로드할 폴더 경로
 
   build-docker:
     needs: build-unity
@@ -65,7 +65,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: webgl-build
-          path: build
+          path: build/WebGL
           
       - run: echo "artifact 다운로드 완료"
 
@@ -111,6 +111,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd ~/dev/match3deploy
             docker-compose pull
             docker-compose up -d

@@ -14,6 +14,9 @@
 .gitignore
 .github
 
+/build/*
+!/build/WebGL
+
 # Node.js 관련 (SignalingServer 폴더 안의 것들은 각자 Dockerfile 단계에서 처리되지만 루트에서도 제외)
 **/node_modules/
 npm-debug.log
