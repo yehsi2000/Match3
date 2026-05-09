@@ -26,7 +26,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: Library
-          key: Library-Match3-WebGL
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
             Library-
 
@@ -40,6 +40,8 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: WebGL
+          buildsPath: build
+          buildName: WebGL
 
       - name: Build Unity Done
         run: echo "Unity 빌드 완료 업로드중..."
