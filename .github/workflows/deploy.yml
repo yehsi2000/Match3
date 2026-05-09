@@ -23,6 +23,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-Match3-WebGL
+          restore-keys: |
+            Library-
+
       - name: Build Unity
         run: echo "Unity 빌드 중..."
 
@@ -35,14 +42,7 @@ jobs:
           targetPlatform: WebGL
 
       - name: Build Unity Done
-        run: echo "Unity 빌드 완료 캐싱중..."
-        
-      - uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-Match3-WebGL
-          restore-keys: |
-            Library-
+        run: echo "Unity 빌드 완료 업로드중..."
 
       - name: 유니티 빌드 결과물 임시 저장 (Upload Artifact)
         uses: actions/upload-artifact@v4
@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 2. Unity 빌드 결과물 다운로드
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: webgl-build
           path: build
