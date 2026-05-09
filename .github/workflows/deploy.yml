@@ -26,7 +26,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: Library
-          key: Library-Match3-WebGL
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
             Library-
 
@@ -40,6 +40,8 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: WebGL
+          buildsPath: build
+          buildName: WebGL
 
       - name: Build Unity Done
         run: echo "Unity 빌드 완료 업로드중..."
@@ -48,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webgl-build  # 이 이름표를 붙여서 깃허브 서버에 올려둡니다.
-          path: build  # 업로드할 폴더 경로
+          path: build/WebGL/WebGL  # 업로드할 폴더 경로
 
   build-docker:
     needs: build-unity
@@ -65,9 +67,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: webgl-build
-          path: build
+          path: build/WebGL
           
-      - run: echo "artifact 다운로드 완료"
+      - name: 디버깅 - 파일 구조 확인
+        run: ls -R build/
 
       - name: 3. Docker Buildx 설정 (빌드 속도 향상 및 캐시용)
         uses: docker/setup-buildx-action@v3
@@ -111,9 +114,9 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd ~/dev/match3deploy
-            docker-compose pull
-            docker-compose up -d
+            docker compose up -d --pull always
             docker image prune -f
       - name: Deploy to Server
         run: echo "배포 완료"
