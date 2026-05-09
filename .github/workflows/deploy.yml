@@ -82,8 +82,8 @@ jobs:
       - name: 5. [Node.js] Signaling Server 이미지 빌드 및 푸시
         uses: docker/build-push-action@v5
         with:
-          context: ./SignalingServer # 👈 실제 Node.js 서버 코드가 있는 폴더 경로로 맞춰주세요.
-          push: ${{ github.event_name != 'pull_request' }} # PR이 아닐 때만 푸시
+          context: ./SignalingServer
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -110,7 +110,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script: 
+          script: |
             cd ~/dev/match3deploy
             docker-compose pull
             docker-compose up -d
