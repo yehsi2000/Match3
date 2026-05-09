@@ -23,7 +23,8 @@ public class SignalingClient : MonoBehaviour {
     private string targetID;
     private string myID;
 
-
+    [DllImport("__Internal")]
+    private static extern string GetServerAddress();
     [DllImport("__Internal")]
     private static extern void Init();
     [DllImport("__Internal")]
@@ -49,7 +50,12 @@ public class SignalingClient : MonoBehaviour {
         DontDestroyOnLoad(gameObject);
         isConnected = false;
         Init();
-        websocket = new WebSocket(ServerConfig.wsServer);
+        string serverAddress = GetServerAddress();
+        if(string.IsNullOrEmpty(serverAddress)) {
+            Debug.Log("Using fallback server address");
+            serverAddress = "zekiddo.iptime.org";
+        }
+        websocket = new WebSocket($"ws://{serverAddress}:9090");
         await websocket.Connect();
         if (websocket.State == WebSocketState.Open) Debug.Log("WebSocket connected!");
         websocket.OnMessage += (bytes) => {

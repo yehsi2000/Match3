@@ -1,0 +1,25 @@
+# Unity 관련 불필요한 폴더들
+/[Aa]ssets/
+/[Pp]roject[Ss]ettings/
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/NativeWebSocket/
+/Packages/
+/[Uu]ser[Ss]ettings/
+
+# Git 및 OS 관련
+.git
+.gitignore
+.github
+
+# Node.js 관련 (SignalingServer 폴더 안의 것들은 각자 Dockerfile 단계에서 처리되지만 루트에서도 제외)
+**/node_modules/
+npm-debug.log
+
+# Docker 관련
+Dockerfile
+.dockerignore
+
+.vscode

@@ -1,0 +1,119 @@
+name: Unity & Docker CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_CLIENT: yehsi2000/my-webgl-client
+  IMAGE_NAME_SERVER: yehsi2000/my-signal-server
+
+jobs:
+  build-unity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-Match3-WebGL
+          restore-keys: |
+            Library-
+
+      - name: Build Unity
+        run: echo "Unity 빌드 중..."
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+
+      - name: Build Unity Done
+        run: echo "Unity 빌드 완료 업로드중..."
+
+      - name: 유니티 빌드 결과물 임시 저장 (Upload Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: webgl-build  # 이 이름표를 붙여서 깃허브 서버에 올려둡니다.
+          path: build  # 업로드할 폴더 경로
+
+  build-docker:
+    needs: build-unity
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # GitHub Container Registry(ghcr.io)에 이미지를 올리기 위해 필수 권한
+
+    steps:
+      - name: 1. 저장소 코드 가져오기 (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Unity 빌드 결과물 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: webgl-build
+          path: build
+          
+      - run: echo "artifact 다운로드 완료"
+
+      - name: 3. Docker Buildx 설정 (빌드 속도 향상 및 캐시용)
+        uses: docker/setup-buildx-action@v3
+
+      - name: 4. GitHub Container Registry 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 5. [Node.js] Signaling Server 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: ./SignalingServer # 👈 실제 Node.js 서버 코드가 있는 폴더 경로로 맞춰주세요.
+          push: ${{ github.event_name != 'pull_request' }} # PR이 아닐 때만 푸시
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 6. [Nginx] WebGL Client 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file : ./WebGLHost/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CLIENT }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-docker
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: 
+            cd ~/dev/match3deploy
+            docker-compose pull
+            docker-compose up -d
+            docker image prune -f
+      - name: Deploy to Server
+        run: echo "배포 완료"
