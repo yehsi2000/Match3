@@ -4,15 +4,23 @@ var MyPlugin = {
         dataChannel: null,
         ws: null,
     },
-    SendWS : function(message){
-        ws.send(message);
-    },
-    GetServerAddress : function(){
+    $impl : {
+        WSAddress : function (){
         let host = window.location.hostname;
         let protocol = window.location.protocol === "https" ? "wss:" : "ws:";
         let wsUrl = protocol + "//" + host + "/matchsig";
         console.log("@websocket url : ", wsUrl);
         if(host == 'localhost') wsUrl = 'ws://zekiddo.iptime.org:9090';
+        return wsUrl;
+        }
+    },
+
+    SendWS : function(message){
+        ws.send(message);
+    },
+    
+    GetServerAddress : function(){
+        let wsUrl = impl.WSAddress();
         let bufferSize = lengthBytesUTF8(wsUrl) + 1;
         let buffer = _malloc(bufferSize);
         stringToUTF8(wsUrl, buffer, bufferSize);
@@ -22,7 +30,8 @@ var MyPlugin = {
         const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]}
         peerConnection = new RTCPeerConnection(configuration);
         dataChannel = peerConnection.createDataChannel("channel");
-        ws = new WebSocket("ws://112.168.15.96:9090");
+        let wsUrl = impl.WSAddress();
+        ws = new WebSocket(wsUrl);
         ws.addEventListener("open", function(event){
         });
         ws.addEventListener("message", function(event){
@@ -103,4 +112,5 @@ var MyPlugin = {
     }
 };
 
+autoAddDeps(MyPlugin, '$impl');
 mergeInto(LibraryManager.library, MyPlugin);
