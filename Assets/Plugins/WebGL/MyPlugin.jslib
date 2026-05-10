@@ -7,7 +7,7 @@ var MyPlugin = {
     $impl : {
         WSAddress : function (){
         let host = window.location.hostname;
-        let protocol = window.location.protocol === "https" ? "wss:" : "ws:";
+        let protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         let wsUrl = protocol + "//" + host + "/matchsig";
         console.log("@websocket url : ", wsUrl);
         if(host == 'localhost') wsUrl = 'ws://zekiddo.iptime.org:9090';
